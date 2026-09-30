@@ -97,16 +97,30 @@ app.post('/api/mcp', (req, res) => {
   res.status(404).json({ error: `Unknown tool: ${tool}` });
 });
 
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    profilesLoaded: store.getProfiles().length,
-    datesRecorded: store.getDates().length,
-    mcpHarnessStatus: 'operational',
-    sseStreaming: 'enabled',
-    mem0Persistence: 'active'
-  });
+app.get('/api/health', async (req, res) => {
+  try {
+    const { getActiveLLMProvider } = await import('../../lib/agents/llmClient.js');
+    res.json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      profilesLoaded: store.getProfiles().length,
+      datesRecorded: store.getDates().length,
+      mcpHarnessStatus: 'operational',
+      sseStreaming: 'enabled',
+      mem0Persistence: 'active',
+      activeLLM: getActiveLLMProvider()
+    });
+  } catch (e) {
+    res.json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      profilesLoaded: store.getProfiles().length,
+      datesRecorded: store.getDates().length,
+      mcpHarnessStatus: 'operational',
+      sseStreaming: 'enabled',
+      mem0Persistence: 'active'
+    });
+  }
 });
 
 // Serve frontend static build in production
