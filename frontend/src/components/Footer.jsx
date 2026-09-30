@@ -79,6 +79,14 @@ export default function Footer({ onNavigate }) {
           <p>© 2026 Agentic Dating System • Powered by Claude Sonnet 4.6 & Model Context Protocol</p>
           <div className="flex items-center space-x-4">
             <a
+              href="https://youtu.be/7pHzRMqgOyY"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center space-x-1.5 text-[#E8472A] hover:text-white transition font-mono text-[11px]"
+            >
+              <span>▶ YouTube Demo</span>
+            </a>
+            <a
               href="https://github.com/khushalmidha/Assingment"
               target="_blank"
               rel="noreferrer"

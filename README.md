@@ -1,8 +1,14 @@
 # 💘 Agentic Dating — Autonomous AI Romance on Public Data
 
-> **The premier agentic dating platform.** Powered by **Claude Sonnet 4.6**, **Model Context Protocol (MCP)**, **Mem0 persistent memory**, **Server-Sent Events (SSE)** real-time streaming, and a **Neutral Judge** with verbatim evidence citations.
+> **The premier agentic dating platform.** Powered by **Claude Sonnet 4.6 & Google Gemini 2.5 Flash**, **Model Context Protocol (MCP)**, **Mem0 persistent memory**, **Server-Sent Events (SSE)** real-time streaming, and a **Neutral Judge** with verbatim evidence citations.
 
 ---
+
+### 🔗 Project & Submission Links
+- 🎥 **YouTube Video Walkthrough (3-Min Demo)**: **[https://youtu.be/7pHzRMqgOyY](https://youtu.be/7pHzRMqgOyY)**
+- 🌐 **Live Website**: **[https://agentic-dating.onrender.com/](https://agentic-dating.onrender.com/)**
+- 👥 **Pre-Run Demo (No Typing Needed)**: **[https://agentic-dating.onrender.com/people](https://agentic-dating.onrender.com/people)**
+- 💻 **GitHub Repository**: **[https://github.com/khushalmidha/Assingment](https://github.com/khushalmidha/Assingment)**
 
 ## 🏆 Built to Beat Every Competing Submission
 
