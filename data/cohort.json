@@ -1,0 +1,227 @@
+[
+  {
+    "id": "pieter-levels",
+    "name": "Pieter Levels",
+    "linkedinUrl": "https://www.linkedin.com/in/pieterlevels",
+    "instagramUrl": "https://www.instagram.com/levelsio",
+    "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80",
+    "role": "Founder, Nomad List & Remote OK",
+    "location": "Nomadic (Amsterdam / Lisbon / Tokyo / Chiang Mai)"
+  },
+  {
+    "id": "marques-brownlee",
+    "name": "Marques Brownlee",
+    "linkedinUrl": "https://www.linkedin.com/in/marques-brownlee-4b531478",
+    "instagramUrl": "https://www.instagram.com/mkbhd",
+    "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&auto=format&fit=crop&q=80",
+    "role": "Creator & Host, MKBHD & Waveform",
+    "location": "New Jersey / New York, USA"
+  },
+  {
+    "id": "sam-altman",
+    "name": "Sam Altman",
+    "linkedinUrl": "https://www.linkedin.com/in/samaltman",
+    "instagramUrl": "https://www.instagram.com/sama",
+    "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=600&auto=format&fit=crop&q=80",
+    "role": "CEO, OpenAI",
+    "location": "San Francisco, CA, USA"
+  },
+  {
+    "id": "guillermo-rauch",
+    "name": "Guillermo Rauch",
+    "linkedinUrl": "https://www.linkedin.com/in/rauchg",
+    "instagramUrl": "https://www.instagram.com/rauchg",
+    "avatar": "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=600&auto=format&fit=crop&q=80",
+    "role": "CEO & Founder, Vercel",
+    "location": "San Francisco, CA, USA"
+  },
+  {
+    "id": "amjad-masad",
+    "name": "Amjad Masad",
+    "linkedinUrl": "https://www.linkedin.com/in/amjadmasad",
+    "instagramUrl": "https://www.instagram.com/amasad",
+    "avatar": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=600&auto=format&fit=crop&q=80",
+    "role": "CEO & Co-Founder, Replit",
+    "location": "San Francisco, CA, USA"
+  },
+  {
+    "id": "whitney-wolfe-herd",
+    "name": "Whitney Wolfe Herd",
+    "linkedinUrl": "https://www.linkedin.com/in/whitney-wolfe-herd-857a268a",
+    "instagramUrl": "https://www.instagram.com/whitney",
+    "avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=600&auto=format&fit=crop&q=80",
+    "role": "Founder & Executive Chair, Bumble",
+    "location": "Austin, TX, USA"
+  },
+  {
+    "id": "sara-blakely",
+    "name": "Sara Blakely",
+    "linkedinUrl": "https://www.linkedin.com/in/sarablakely27",
+    "instagramUrl": "https://www.instagram.com/sarablakely",
+    "avatar": "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=600&auto=format&fit=crop&q=80",
+    "role": "Founder, Spanx & Sneex",
+    "location": "Atlanta, GA, USA"
+  },
+  {
+    "id": "alexis-ohanian",
+    "name": "Alexis Ohanian",
+    "linkedinUrl": "https://www.linkedin.com/in/alexisohanian",
+    "instagramUrl": "https://www.instagram.com/alexisohanian",
+    "avatar": "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=600&auto=format&fit=crop&q=80",
+    "role": "Founder, Seven Seven Six & Co-Founder, Reddit",
+    "location": "Miami, FL, USA"
+  },
+  {
+    "id": "brian-chesky",
+    "name": "Brian Chesky",
+    "linkedinUrl": "https://www.linkedin.com/in/brianchesky",
+    "instagramUrl": "https://www.instagram.com/bchesky",
+    "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=600&auto=format&fit=crop&q=80",
+    "role": "Co-Founder & CEO, Airbnb",
+    "location": "San Francisco, CA, USA"
+  },
+  {
+    "id": "tim-ferriss",
+    "name": "Tim Ferriss",
+    "linkedinUrl": "https://www.linkedin.com/in/timferriss",
+    "instagramUrl": "https://www.instagram.com/timferriss",
+    "avatar": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600&auto=format&fit=crop&q=80",
+    "role": "Author & Host, The Tim Ferriss Show",
+    "location": "Austin, TX, USA"
+  },
+  {
+    "id": "melanie-perkins",
+    "name": "Melanie Perkins",
+    "linkedinUrl": "https://www.linkedin.com/in/melanieperkins",
+    "instagramUrl": "https://www.instagram.com/melaniecanva",
+    "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80",
+    "role": "Co-Founder & CEO, Canva",
+    "location": "Sydney, Australia"
+  },
+  {
+    "id": "andrew-huberman",
+    "name": "Andrew Huberman",
+    "linkedinUrl": "https://www.linkedin.com/in/andrew-huberman",
+    "instagramUrl": "https://www.instagram.com/hubermanlab",
+    "avatar": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=600&auto=format&fit=crop&q=80",
+    "role": "Professor of Neurobiology, Stanford & Host, Huberman Lab",
+    "location": "Stanford, CA, USA"
+  },
+  {
+    "id": "shaan-puri",
+    "name": "Shaan Puri",
+    "linkedinUrl": "https://www.linkedin.com/in/shaanpuri",
+    "instagramUrl": "https://www.instagram.com/shaanpuri",
+    "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&auto=format&fit=crop&q=80",
+    "role": "Host, My First Million & Founder",
+    "location": "San Francisco, CA, USA"
+  },
+  {
+    "id": "julie-zhuo",
+    "name": "Julie Zhuo",
+    "linkedinUrl": "https://www.linkedin.com/in/juliezhuo",
+    "instagramUrl": "https://www.instagram.com/joulee",
+    "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=600&auto=format&fit=crop&q=80",
+    "role": "Co-Founder, Sundial & Author, The Making of a Manager",
+    "location": "California, USA"
+  },
+  {
+    "id": "sahil-bloom",
+    "name": "Sahil Bloom",
+    "linkedinUrl": "https://www.linkedin.com/in/sahilbloom",
+    "instagramUrl": "https://www.instagram.com/sahilbloom",
+    "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&auto=format&fit=crop&q=80",
+    "role": "Author, The 5 Types of Wealth & Investor",
+    "location": "New York, USA"
+  },
+  {
+    "id": "cleo-abram",
+    "name": "Cleo Abram",
+    "linkedinUrl": "https://www.linkedin.com/in/cleoabram",
+    "instagramUrl": "https://www.instagram.com/cleoabram",
+    "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&auto=format&fit=crop&q=80",
+    "role": "Video Journalist & Creator, Huge If True",
+    "location": "New York, USA"
+  },
+  {
+    "id": "grace-beverley",
+    "name": "Grace Beverley",
+    "linkedinUrl": "https://www.linkedin.com/in/gracebeverley",
+    "instagramUrl": "https://www.instagram.com/gracebeverley",
+    "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80",
+    "role": "Founder, TALA & Shreddy, Author, Working Hard, Hardly Working",
+    "location": "London, UK"
+  },
+  {
+    "id": "codie-sanchez",
+    "name": "Codie Sanchez",
+    "linkedinUrl": "https://www.linkedin.com/in/codiesanchez",
+    "instagramUrl": "https://www.instagram.com/codiesanchez",
+    "avatar": "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=600&auto=format&fit=crop&q=80",
+    "role": "Founder & CEO, Main St. / Contrarian Thinking",
+    "location": "Austin, TX, USA"
+  },
+  {
+    "id": "sara-dietschy",
+    "name": "Sara Dietschy",
+    "linkedinUrl": "https://www.linkedin.com/in/saradietschy",
+    "instagramUrl": "https://www.instagram.com/saradietschy",
+    "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=600&auto=format&fit=crop&q=80",
+    "role": "Tech Creator, Filmmaker & Host, That Creative Life",
+    "location": "Dallas / New York, USA"
+  },
+  {
+    "id": "austin-evans",
+    "name": "Austin Evans",
+    "linkedinUrl": "https://www.linkedin.com/in/austin-evans-608b6a32",
+    "instagramUrl": "https://www.instagram.com/austinnotduncan",
+    "avatar": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600&auto=format&fit=crop&q=80",
+    "role": "Tech Reviewer & Video Creator",
+    "location": "Los Angeles, CA, USA"
+  },
+  {
+    "id": "steven-bartlett",
+    "name": "Steven Bartlett",
+    "linkedinUrl": "https://www.linkedin.com/in/steven-bartlett-56986834",
+    "instagramUrl": "https://www.instagram.com/steven",
+    "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&auto=format&fit=crop&q=80",
+    "role": "Host, The Diary Of A CEO & Investor, Dragons' Den",
+    "location": "London, UK"
+  },
+  {
+    "id": "gary-vaynerchuk",
+    "name": "Gary Vaynerchuk",
+    "linkedinUrl": "https://www.linkedin.com/in/garyvaynerchuk",
+    "instagramUrl": "https://www.instagram.com/garyvee",
+    "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=600&auto=format&fit=crop&q=80",
+    "role": "Chairman, VaynerX & CEO, VaynerMedia",
+    "location": "New York, USA"
+  },
+  {
+    "id": "arianna-huffington",
+    "name": "Arianna Huffington",
+    "linkedinUrl": "https://www.linkedin.com/in/ariannahuffington",
+    "instagramUrl": "https://www.instagram.com/ariannahuff",
+    "avatar": "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=600&auto=format&fit=crop&q=80",
+    "role": "Founder & CEO, Thrive Global & Founder, The Huffington Post",
+    "location": "New York, USA"
+  },
+  {
+    "id": "greg-isenberg",
+    "name": "Greg Isenberg",
+    "linkedinUrl": "https://www.linkedin.com/in/gregisenberg",
+    "instagramUrl": "https://www.instagram.com/gregisenberg",
+    "avatar": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=600&auto=format&fit=crop&q=80",
+    "role": "CEO, Late Checkout & Host, The Greg Isenberg Show",
+    "location": "Miami / Montreal"
+  },
+  {
+    "id": "lenny-rachitsky",
+    "name": "Lenny Rachitsky",
+    "linkedinUrl": "https://www.linkedin.com/in/lennyrachitsky",
+    "instagramUrl": "https://www.instagram.com/lennyrachitsky",
+    "avatar": "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=600&auto=format&fit=crop&q=80",
+    "role": "Author, Lenny's Newsletter & Host, Lenny's Podcast",
+    "location": "San Francisco, CA, USA"
+  }
+]

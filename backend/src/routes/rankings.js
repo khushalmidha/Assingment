@@ -3,7 +3,20 @@ import { store } from '../db/store.js';
 
 const router = express.Router();
 
-// GET ranked matches for a person
+// GET /api/rankings/matrix: NxN compatibility matrix for the heatmap
+router.get('/matrix', (req, res) => {
+  try {
+    const data = store.getMatrix();
+    res.json({
+      success: true,
+      data
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// GET /api/rankings/:personId: Ranked matches for a specific person
 router.get('/:personId', (req, res) => {
   try {
     const person = store.getProfileById(req.params.personId);
@@ -18,24 +31,24 @@ router.get('/:personId', (req, res) => {
         id: person.id,
         name: person.name,
         avatar: person.avatar,
-        headline: person.headline,
-        company: person.company
+        headline: person.headline || person.role,
+        personality_archetype: person.personality_archetype
       },
       rankingsCount: rankings.length,
-      rankings
+      rankings,
+      data: rankings
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// GET global compatibility leaderboard & matrix
+// GET /api/rankings: Top matches leaderboard
 router.get('/', (req, res) => {
   try {
     const profiles = store.getProfiles();
     const dates = store.getDates();
 
-    // Top matches leaderboard
     const leaderboard = [];
     const seen = new Set();
 
@@ -46,23 +59,27 @@ router.get('/', (req, res) => {
         if (!seen.has(pairKey)) {
           seen.add(pairKey);
           leaderboard.push({
-            person1: { id: p.id, name: p.name, avatar: p.avatar, headline: p.headline },
-            person2: { id: m.person.id, name: m.person.name, avatar: m.person.avatar, headline: m.person.headline },
+            person1: { id: p.id, name: p.name, avatar: p.avatar, headline: p.headline || p.role },
+            person2: { id: m.person.id, name: m.person.name, avatar: m.person.avatar, headline: m.person.headline || m.person.role },
+            score: m.score,
             scores: m.scores,
-            reasons: m.reasons,
+            reasons: m.reasons || m.explanation,
+            explanation: m.explanation,
+            date_id: m.date_id,
             dateTranscriptId: m.dateTranscriptId
           });
         }
       }
     }
 
-    leaderboard.sort((a, b) => b.scores.overall - a.scores.overall);
+    leaderboard.sort((a, b) => b.score - a.score);
 
     res.json({
       success: true,
       totalProfiles: profiles.length,
       totalDates: dates.length,
-      leaderboard: leaderboard.slice(0, 20)
+      leaderboard: leaderboard.slice(0, 25),
+      data: leaderboard.slice(0, 25)
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });

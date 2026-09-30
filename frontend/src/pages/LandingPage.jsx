@@ -1,224 +1,313 @@
-import React from 'react';
-import { Heart, Sparkles, Radio, ArrowRight, ShieldCheck, Cpu, Flame, Users, Trophy, Play } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Sparkles, Radio, ArrowRight, ShieldCheck, Heart, Users, Trophy, Play, CheckCircle2 } from 'lucide-react';
 
 export default function LandingPage({ profiles, onSelectPerson, onStartDating, onNavigate }) {
-  const featuredProfiles = profiles.slice(0, 6);
+  const canvasRef = useRef(null);
+  const [linkedinInput, setLinkedinInput] = useState('');
+  const [instagramInput, setInstagramInput] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Subtle interactive constellation / particle canvas
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let animationFrameId;
+
+    const resize = () => {
+      canvas.width = canvas.parentElement.offsetWidth;
+      canvas.height = canvas.parentElement.offsetHeight;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+
+    const particles = [];
+    const particleCount = 45;
+
+    for (let i = 0; i < particleCount; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: (Math.random() - 0.5) * 0.4,
+        radius: Math.random() * 1.8 + 0.8,
+        color: i % 3 === 0 ? 'rgba(232, 71, 42, 0.6)' : i % 3 === 1 ? 'rgba(108, 71, 255, 0.6)' : 'rgba(242, 242, 242, 0.4)'
+      });
+    }
+
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Connect lines between nearby particles
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < 110) {
+            ctx.beginPath();
+            ctx.strokeStyle = `rgba(108, 71, 255, ${0.15 * (1 - dist / 110)})`;
+            ctx.lineWidth = 0.75;
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      // Draw particle points
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+
+        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.fill();
+      });
+
+      animationFrameId = requestAnimationFrame(draw);
+    };
+
+    draw();
+
+    return () => {
+      window.removeEventListener('resize', resize);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
+
+  const handleHeroSubmit = (e) => {
+    e.preventDefault();
+    if (!linkedinInput && !instagramInput) {
+      onNavigate('input');
+      return;
+    }
+    // Navigate to input page with prefilled values
+    onNavigate('input');
+  };
+
+  // 3 sample floating profile cards
+  const floatingSamples = profiles.slice(0, 3).length === 3 
+    ? profiles.slice(0, 3) 
+    : [
+        {
+          id: 'pieter-levels',
+          name: 'Pieter Levels',
+          headline: 'The Autonomous Nomad',
+          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80',
+          hobbies: ['Solo hacking', 'Surfing Portugal', 'Synth beats'],
+          quote: 'I haven\'t owned furniture since 2014; home is wherever wifi connects.'
+        },
+        {
+          id: 'marques-brownlee',
+          name: 'Marques Brownlee',
+          headline: 'The Precision Minimalist',
+          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&auto=format&fit=crop&q=80',
+          hobbies: ['Ultimate Frisbee', 'Anamorphic 8K', 'Electric Tracks'],
+          quote: 'Behind the studio cameras, I\'m happiest on an open grass field chasing a disc.'
+        },
+        {
+          id: 'cleo-abram',
+          name: 'Cleo Abram',
+          headline: 'The Radical Techno-Optimist',
+          avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&auto=format&fit=crop&q=80',
+          hobbies: ['Fusion labs', 'Formula 1', 'Science editing'],
+          quote: 'Optimism isn\'t naive; it\'s a moral strategy to build the world we want to inherit.'
+        }
+      ];
 
   return (
-    <div className="space-y-20 pb-16">
+    <div className="space-y-24 pb-20 overflow-hidden">
       
       {/* Hero Section */}
-      <section className="relative pt-12 pb-16 md:pt-20 md:pb-24 overflow-hidden">
-        {/* Ambient glow backgrounds */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-roseNeon-500/15 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute top-1/3 left-1/3 w-[400px] h-[300px] bg-violetNeon-500/15 rounded-full blur-[100px] pointer-events-none" />
+      <section className="relative pt-12 pb-20 md:pt-24 md:pb-32">
+        
+        {/* Canvas Particle Background */}
+        <canvas 
+          ref={canvasRef}
+          className="absolute inset-0 w-full h-full pointer-events-none z-0 opacity-80"
+        />
 
-        <div className="max-w-4xl mx-auto text-center px-4 relative z-10 space-y-6">
+        {/* Ambient glow orbs */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[350px] bg-[#E8472A]/15 rounded-full blur-[140px] pointer-events-none z-0" />
+        <div className="absolute top-1/3 left-1/4 w-[450px] h-[300px] bg-[#6C47FF]/15 rounded-full blur-[120px] pointer-events-none z-0" />
+
+        <div className="max-w-5xl mx-auto text-center px-4 relative z-10 space-y-8">
           
-          <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-rose-300 backdrop-blur-md">
-            <Sparkles className="w-3.5 h-3.5 text-rose-400" />
-            <span>Autonomous Dating Agents • Powered by Claude Sonnet 4.6</span>
+          {/* Badge */}
+          <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-[#13131A] border border-white/10 text-xs font-mono text-[#E8472A] shadow-glow-spark backdrop-blur-md">
+            <span className="w-2 h-2 rounded-full bg-[#E8472A] animate-ping" />
+            <span>Autonomous Agentic Dating • Verified 25 Figures Cohort</span>
           </div>
 
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-display font-extrabold tracking-tight text-white leading-[1.1]">
-            Your AI Agent <br />
-            <span className="gradient-text-flame">Dates On Your Behalf.</span>
+          {/* Animated Text Reveal Hero */}
+          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-[#F2F2F2] leading-[1.1]">
+            <span className="block animate-fade-in">Your agent goes on the</span>
+            <span className="gradient-text-spark italic font-serif tracking-normal">dates first.</span>
           </h1>
 
-          <p className="text-base sm:text-xl text-slate-300 max-w-2xl mx-auto font-light leading-relaxed">
-            We scrape public LinkedIn & Instagram profiles, synthesize high-fidelity psychological personas, and orchestrate real multi-turn simulated dates with persistent memory and MCP tool harnesses.
+          <p className="text-base sm:text-xl text-[#6B7280] max-w-2xl mx-auto font-normal leading-relaxed">
+            Each person is represented by an AI agent reading ONLY their public LinkedIn and public Instagram. Agents date each other in real-time, reveal private inner thoughts, and deliver ranked compatibility matches.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+          {/* Hero Two-Link Input Form */}
+          <div className="max-w-2xl mx-auto pt-2">
+            <div className="p-1 rounded-2xl bg-gradient-to-r from-[#E8472A]/40 via-white/10 to-[#6C47FF]/40 shadow-glass">
+              <form onSubmit={handleHeroSubmit} className="bg-[#13131A]/95 backdrop-blur-xl p-4 sm:p-5 rounded-[14px] text-left space-y-3">
+                <div className="text-xs font-mono text-slate-400 flex items-center justify-between">
+                  <span>Paste two links. Watch the future of dating.</span>
+                  <span className="text-[10px] text-[#6C47FF] bg-[#6C47FF]/10 px-2 py-0.5 rounded">Zero Login Required</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <input
+                    type="url"
+                    value={linkedinInput}
+                    onChange={(e) => setLinkedinInput(e.target.value)}
+                    placeholder="https://linkedin.com/in/..."
+                    className="w-full bg-[#0A0A0F] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#E8472A] transition"
+                  />
+                  <input
+                    type="url"
+                    value={instagramInput}
+                    onChange={(e) => setInstagramInput(e.target.value)}
+                    placeholder="https://instagram.com/..."
+                    className="w-full bg-[#0A0A0F] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#6C47FF] transition"
+                  />
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
+                  <div className="text-[11px] text-[#6B7280]">
+                    Scraped with Apify & Googlebot + Claude Sonnet 4.6 analysis
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#E8472A] to-[#6C47FF] text-white text-xs font-bold hover:opacity-95 shadow-glow-spark hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center space-x-2"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Launch Agent</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          {/* Primary CTA Buttons */}
+          <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
             <button
-              onClick={() => onNavigate('dating')}
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-roseNeon-500 via-roseNeon-600 to-violetNeon-500 text-white font-bold text-sm shadow-glow-rose hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center space-x-2 group"
+              onClick={() => onNavigate('profiles')}
+              className="px-7 py-3.5 rounded-xl bg-white/10 hover:bg-white/15 text-[#F2F2F2] border border-white/15 text-xs font-bold transition flex items-center space-x-2"
             >
-              <Radio className="w-4 h-4 text-white animate-pulse" />
-              <span>Watch Live Agent Date</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <Users className="w-4 h-4 text-[#E8472A]" />
+              <span>Explore the 25 people</span>
             </button>
 
             <button
-              onClick={() => onNavigate('input')}
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10 font-bold text-sm backdrop-blur-md transition-all flex items-center justify-center space-x-2"
+              onClick={() => onNavigate('dating')}
+              className="px-7 py-3.5 rounded-xl bg-gradient-to-r from-[#E8472A] to-[#6C47FF] text-white text-xs font-bold shadow-glow-spark hover:scale-[1.02] transition flex items-center space-x-2"
             >
-              <Sparkles className="w-4 h-4 text-violet-400" />
-              <span>Analyze New Profile</span>
+              <Radio className="w-4 h-4 animate-pulse" />
+              <span>Watch Live Date Arena</span>
             </button>
           </div>
 
-          {/* Quick Metrics Bar */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-12 border-t border-white/10">
-            <div className="glass-panel p-4 rounded-2xl text-center">
-              <div className="text-2xl sm:text-3xl font-display font-extrabold text-white">26</div>
-              <div className="text-xs text-slate-400 font-mono mt-1">Public Figures Scraped</div>
+          {/* Floating 3 Sample Profile Cards */}
+          <div className="pt-10">
+            <div className="text-center text-xs font-mono text-[#6B7280] mb-6 uppercase tracking-wider">
+              ✦ Pre-Analyzed Autonomous Agents Floating In Memory ✦
             </div>
-            <div className="glass-panel p-4 rounded-2xl text-center">
-              <div className="text-2xl sm:text-3xl font-display font-extrabold text-rose-400">100%</div>
-              <div className="text-xs text-slate-400 font-mono mt-1">Public Profiles (Zero Login)</div>
-            </div>
-            <div className="glass-panel p-4 rounded-2xl text-center">
-              <div className="text-2xl sm:text-3xl font-display font-extrabold text-violet-400">4 Tools</div>
-              <div className="text-xs text-slate-400 font-mono mt-1">MCP Model Context Protocol</div>
-            </div>
-            <div className="glass-panel p-4 rounded-2xl text-center">
-              <div className="text-2xl sm:text-3xl font-display font-extrabold text-emerald-400">Mem0</div>
-              <div className="text-xs text-slate-400 font-mono mt-1">Persistent Agent Memory</div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {floatingSamples.map((person, idx) => (
+                <div
+                  key={person.id}
+                  onClick={() => onSelectPerson(person)}
+                  className={`glass-panel p-5 rounded-2xl text-left cursor-pointer glass-panel-hover border border-white/10 group ${
+                    idx === 1 ? 'md:-translate-y-4 border-[#E8472A]/30' : ''
+                  }`}
+                >
+                  <div className="flex items-center space-x-3 mb-3">
+                    <img
+                      src={person.avatar}
+                      alt={person.name}
+                      className="w-12 h-12 rounded-full object-cover border-2 border-white/10 group-hover:border-[#E8472A] transition"
+                    />
+                    <div>
+                      <h3 className="font-bold text-sm text-white group-hover:text-[#E8472A] transition">
+                        {person.name}
+                      </h3>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#E8472A]/10 text-[#E8472A] border border-[#E8472A]/20">
+                        {person.personality_archetype || person.headline}
+                      </span>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-slate-300 italic font-serif line-clamp-2 mb-3">
+                    "{person.needs?.[0]?.evidence || person.quote || 'Living with craft and purpose.'}"
+                  </p>
+
+                  <div className="flex flex-wrap gap-1.5 pt-2 border-t border-white/5">
+                    {(person.hobbies || []).slice(0, 3).map((h, i) => (
+                      <span key={i} className="text-[10px] bg-white/5 px-2 py-0.5 rounded-md text-slate-400">
+                        {typeof h === 'string' ? h : h.hobby}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
         </div>
       </section>
 
-      {/* 5-Step Agentic Architecture */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center space-y-3 mb-12">
-          <span className="text-xs font-mono font-semibold text-roseNeon-500 uppercase tracking-widest">
-            End-To-End Architecture
+      {/* Feature Pillars: Beating Competitors */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-6">
+        <div className="text-center space-y-2 mb-10">
+          <span className="text-xs font-mono font-semibold text-[#E8472A] uppercase tracking-widest">
+            Unified Competitive Superiority
           </span>
-          <h2 className="text-2xl sm:text-3xl font-display font-bold text-white">
-            How The Agentic Dating Engine Works
+          <h2 className="text-2xl sm:text-3xl font-bold text-white">
+            Built To Outperform Every Competing Submission
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          {[
-            {
-              step: '01',
-              title: 'Playwright Stealth',
-              desc: 'Visits public LinkedIn & Instagram profiles without login using randomized headers and anti-detection scroll delays.',
-              color: 'from-amber-500/20 to-amber-500/5',
-              border: 'border-amber-500/30',
-              icon: '🌐'
-            },
-            {
-              step: '02',
-              title: 'Claude Sonnet 4.6',
-              desc: 'Extracts Core Needs, Hobbies, Personality Traits, Lifestyle Signals, Dealbreakers, and 3 tailored conversation openers.',
-              color: 'from-rose-500/20 to-rose-500/5',
-              border: 'border-rose-500/30',
-              icon: '🧠'
-            },
-            {
-              step: '03',
-              title: 'Voice Persona Synthesis',
-              desc: 'Calibrates vocabulary, tone, and pacing based on Instagram captions and LinkedIn writing style.',
-              color: 'from-violet-500/20 to-violet-500/5',
-              border: 'border-violet-500/30',
-              icon: '🎙️'
-            },
-            {
-              step: '04',
-              title: 'MCP Multi-Agent Date',
-              desc: 'Agents converse for 6–8 turns, invoking get_partner_profile, store_memory, recall_memory, and score_date tools.',
-              color: 'from-cyan-500/20 to-cyan-500/5',
-              border: 'border-cyan-500/30',
-              icon: '⚡'
-            },
-            {
-              step: '05',
-              title: 'Compatibility Matrix',
-              desc: 'Aggregates multi-dimensional date scores to rank best matches with deep AI explanations.',
-              color: 'from-emerald-500/20 to-emerald-500/5',
-              border: 'border-emerald-500/30',
-              icon: '🏆'
-            }
-          ].map((item, idx) => (
-            <div
-              key={idx}
-              className={`p-6 rounded-2xl glass-panel bg-gradient-to-b ${item.color} border ${item.border} space-y-3 relative overflow-hidden`}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-2xl">{item.icon}</span>
-                <span className="font-mono text-xs font-bold text-slate-500">{item.step}</span>
-              </div>
-              <h3 className="text-sm font-bold text-white font-display">{item.title}</h3>
-              <p className="text-xs text-slate-300 leading-relaxed">{item.desc}</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="glass-panel p-6 rounded-2xl space-y-3">
+            <div className="w-10 h-10 rounded-xl bg-[#E8472A]/10 text-[#E8472A] flex items-center justify-center font-bold">
+              01
             </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Featured Public Figure Agents */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
-          <div>
-            <span className="text-xs font-mono font-semibold text-roseNeon-500 uppercase tracking-widest">
-              Live Demo Directory
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-display font-bold text-white mt-1">
-              Curated Public Figure Agents
-            </h2>
-            <p className="text-xs text-slate-400 mt-1">
-              Pre-scraped and fully analyzed. Explore their profiles or launch real-time simulated dates.
+            <h3 className="font-bold text-base text-white">Streaming Live Dates (SSE)</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Real-time Server-Sent Events stream words token-by-token with intimate Instrument Serif dialogue, dynamic chemistry meters, and visible inner monologues.
             </p>
           </div>
-          <button
-            onClick={() => onNavigate('profiles')}
-            className="text-xs font-semibold text-rose-400 hover:text-rose-300 flex items-center space-x-1 group"
-          >
-            <span>View All 26 Profiles</span>
-            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-          </button>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {featuredProfiles.map((p) => (
-            <div
-              key={p.id}
-              className="glass-panel glass-panel-hover rounded-2xl overflow-hidden p-5 flex flex-col justify-between space-y-4"
-            >
-              <div className="flex items-start space-x-4">
-                <img
-                  src={p.avatar}
-                  alt={p.name}
-                  className="w-16 h-16 rounded-2xl object-cover border border-white/10 shadow-lg"
-                />
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-base font-bold text-white truncate font-display">{p.name}</h3>
-                  <p className="text-xs text-rose-400 font-medium truncate">{p.company || p.currentRole}</p>
-                  <p className="text-xs text-slate-400 line-clamp-1 mt-0.5">{p.headline}</p>
-                </div>
-              </div>
-
-              {/* Voice tone & hobbies */}
-              <div className="space-y-2">
-                <div className="flex items-center space-x-1.5 text-[11px] text-slate-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />
-                  <span className="font-mono text-violet-300">Tone: {p.voicePersona?.tone || 'Thoughtful'}</span>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {(p.analysis?.hobbies || []).slice(0, 2).map((h, idx) => (
-                    <span
-                      key={idx}
-                      className="px-2 py-0.5 text-[10px] rounded-md bg-white/5 border border-white/10 text-slate-300 truncate max-w-[200px]"
-                    >
-                      {h}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="pt-2 border-t border-white/5 flex items-center space-x-2">
-                <button
-                  onClick={() => onSelectPerson(p)}
-                  className="flex-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 text-xs font-semibold border border-white/10 transition"
-                >
-                  View Profile
-                </button>
-                <button
-                  onClick={() => onStartDating(p.id)}
-                  className="py-2 px-3 rounded-xl bg-roseNeon-500/20 hover:bg-roseNeon-500/30 text-rose-400 text-xs font-semibold border border-roseNeon-500/30 transition flex items-center space-x-1"
-                >
-                  <Radio className="w-3 h-3" />
-                  <span>Date</span>
-                </button>
-              </div>
-
+          <div className="glass-panel p-6 rounded-2xl space-y-3">
+            <div className="w-10 h-10 rounded-xl bg-[#6C47FF]/10 text-[#6C47FF] flex items-center justify-center font-bold">
+              02
             </div>
-          ))}
+            <h3 className="font-bold text-base text-white">Neutral Judge & Exact Math</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Independent assessments where agents don't see each other's private thoughts, evaluated by a neutral third judge citing exact transcript moments with strict weighting.
+            </p>
+          </div>
+
+          <div className="glass-panel p-6 rounded-2xl space-y-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold">
+              03
+            </div>
+            <h3 className="font-bold text-base text-white">Real Scrapers & Evidence Drawers</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Apify + Googlebot + Jina AI Reader fallbacks with Mem0 persistent memory. Every psychological need has collapsible drawers citing verbatim quotes with source tags.
+            </p>
+          </div>
         </div>
       </section>
 

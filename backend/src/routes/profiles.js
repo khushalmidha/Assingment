@@ -1,7 +1,8 @@
 import express from 'express';
 import { store } from '../db/store.js';
-import { scrapeLinkedInProfile, scrapeInstagramProfile } from '../scrapers/browserScraper.js';
-import { analyzeProfileWithClaude } from '../agents/analyzer.js';
+import { scrapeLinkedIn } from '../../../lib/scrapers/linkedin.js';
+import { scrapeInstagram } from '../../../lib/scrapers/instagram.js';
+import { analyzePersonProfile } from '../../../lib/agents/analyzer.js';
 
 const router = express.Router();
 
@@ -44,78 +45,117 @@ router.get('/:id', (req, res) => {
   }
 });
 
-// POST scrape and analyze new profile
+// POST /api/scrape: Scrape LinkedIn and Instagram profiles
+router.post('/scrape', async (req, res) => {
+  const { linkedinUrl, instagramUrl } = req.body;
+
+  if (!linkedinUrl || !instagramUrl) {
+    return res.status(400).json({ success: false, error: 'Both linkedinUrl and instagramUrl are required.' });
+  }
+
+  try {
+    console.log(`[API] /scrape: Scraping ${linkedinUrl} and ${instagramUrl}`);
+    const [linkedinData, instagramData] = await Promise.all([
+      scrapeLinkedIn(linkedinUrl),
+      scrapeInstagram(instagramUrl)
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        linkedin: linkedinData,
+        instagram: instagramData
+      }
+    });
+  } catch (err) {
+    console.error('[API] /scrape error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST /api/analyze/:personId: Analyze scraped data with Claude Sonnet 4.6
+router.post('/analyze/:personId', async (req, res) => {
+  const { personId } = req.params;
+  const { linkedin, instagram, name } = req.body;
+
+  try {
+    const existing = store.getProfileById(personId);
+    const personName = name || existing?.name || personId.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+
+    const analyzed = await analyzePersonProfile(personId, personName, linkedin || {}, instagram || {});
+
+    const updated = {
+      id: personId,
+      name: personName,
+      avatar: existing?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80",
+      linkedinUrl: existing?.linkedinUrl || linkedin?.url,
+      instagramUrl: existing?.instagramUrl || instagram?.url,
+      headline: analyzed.personality_archetype,
+      personality_archetype: analyzed.personality_archetype,
+      voice_profile: analyzed.voice_profile,
+      needs: analyzed.needs,
+      hobbies: analyzed.hobbies,
+      interests: analyzed.interests,
+      dealbreakers: analyzed.dealbreakers,
+      conversation_starters: analyzed.conversation_starters,
+      status: "ready",
+      updatedAt: new Date().toISOString()
+    };
+
+    store.addProfile(updated);
+
+    res.json({
+      success: true,
+      message: `Profile analyzed and stored with evidence citations and Mem0 voice profile.`,
+      data: updated
+    });
+  } catch (err) {
+    console.error('[API] /analyze/:personId error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST /api/profiles/analyze (Direct pipeline ingestion)
 router.post('/analyze', async (req, res) => {
   const { linkedinUrl, instagramUrl } = req.body;
 
   if (!linkedinUrl || !instagramUrl) {
-    return res.status(400).json({
-      success: false,
-      error: 'Both linkedinUrl and instagramUrl are required.'
-    });
+    return res.status(400).json({ success: false, error: 'Both linkedinUrl and instagramUrl are required.' });
   }
 
   try {
-    console.log(`[API] Triggering scrape & analysis pipeline for:\nLinkedIn: ${linkedinUrl}\nInstagram: ${instagramUrl}`);
+    console.log(`[API] Ingesting profile: ${linkedinUrl} + ${instagramUrl}`);
+    const [linkedinData, instagramData] = await Promise.all([
+      scrapeLinkedIn(linkedinUrl),
+      scrapeInstagram(instagramUrl)
+    ]);
 
-    // Step 1: Scrape LinkedIn
-    const linkedInData = await scrapeLinkedInProfile(linkedinUrl);
+    const slug = linkedinUrl.split('/in/')[1]?.replace(/\/$/, '') || `user-${Date.now()}`;
+    const personName = linkedinData.name || instagramData.fullName || slug.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
 
-    // Step 2: Scrape Instagram
-    const instagramData = await scrapeInstagramProfile(instagramUrl);
+    const analyzed = await analyzePersonProfile(slug, personName, linkedinData, instagramData);
 
-    // Merge scraped data
-    const combinedData = {
-      name: linkedInData.name || instagramData.name || 'New Innovator',
-      headline: linkedInData.headline || 'Creator & Innovator',
-      currentRole: linkedInData.currentRole || 'Leader',
-      company: linkedInData.company || 'Venture & Design',
-      education: linkedInData.education || 'University Alumni',
-      skills: linkedInData.skills || ['Creativity', 'Leadership', 'Strategy'],
-      bio: linkedInData.bio || '',
-      recentPosts: linkedInData.recentPosts || [],
-      instagramBio: instagramData.instagramBio || '',
-      instagramCaptions: instagramData.instagramCaptions || [],
-      hashtags: instagramData.hashtags || [],
-      topics: instagramData.topics || ['Technology', 'Creativity', 'Lifestyle'],
-      avatar: instagramData.avatar || linkedInData.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80'
-    };
-
-    // Step 3: Claude Sonnet 4.6 Analysis
-    const analysis = await analyzeProfileWithClaude(combinedData);
-
-    const newPersonId = `person-${Date.now()}`;
     const newProfile = {
-      id: newPersonId,
-      name: combinedData.name,
-      avatar: combinedData.avatar,
+      id: slug,
+      name: personName,
+      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80",
       linkedinUrl,
       instagramUrl,
-      headline: combinedData.headline,
-      currentRole: combinedData.currentRole,
-      company: combinedData.company,
-      education: combinedData.education,
-      skills: combinedData.skills,
-      bio: combinedData.bio,
-      recentPosts: combinedData.recentPosts,
-      instagramBio: combinedData.instagramBio,
-      instagramCaptions: combinedData.instagramCaptions,
-      hashtags: combinedData.hashtags,
-      topics: combinedData.topics,
-      voicePersona: analysis.voicePersona || {
-        tone: 'Articulate, visionary, and engaging',
-        pacing: 'Thoughtful and confident',
-        catchphrases: ['Leading with intent', 'authenticity', 'staying curious'],
-        styleSummary: 'Engages with warmth and clarity, focusing on values and shared passions.'
+      headline: analyzed.personality_archetype,
+      role: analyzed.personality_archetype,
+      company: linkedinData.company || "Independent",
+      personality_archetype: analyzed.personality_archetype,
+      voice_profile: analyzed.voice_profile,
+      voicePersona: {
+        tone: analyzed.voice_profile.split('.')[0] || "Articulate",
+        styleSummary: analyzed.voice_profile
       },
-      analysis: {
-        coreNeeds: analysis.coreNeeds,
-        hobbies: analysis.hobbies,
-        personalityTraits: analysis.personalityTraits,
-        lifestyleSignals: analysis.lifestyleSignals,
-        dealbreakers: analysis.dealbreakers,
-        conversationStarters: analysis.conversationStarters
-      },
+      needs: analyzed.needs,
+      hobbies: analyzed.hobbies,
+      interests: analyzed.interests,
+      dealbreakers: analyzed.dealbreakers,
+      conversation_starters: analyzed.conversation_starters,
+      status: "ready",
       createdAt: new Date().toISOString()
     };
 
@@ -127,7 +167,7 @@ router.post('/analyze', async (req, res) => {
       data: newProfile
     });
   } catch (err) {
-    console.error('[API] Scrape & analyze error:', err);
+    console.error('[API] /profiles/analyze error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });

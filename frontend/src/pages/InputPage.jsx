@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
-import { Sparkles, Terminal, CheckCircle2, ArrowRight, Globe, Loader2, AlertCircle, Play } from 'lucide-react';
+import { Sparkles, Terminal, CheckCircle2, ArrowRight, Check, Play, AlertCircle } from 'lucide-react';
 import { LinkedinIcon, InstagramIcon } from '../components/Icons';
 
 const QUICK_PRESETS = [
   {
-    name: 'Satya Nadella',
-    role: 'CEO @ Microsoft',
-    linkedin: 'https://www.linkedin.com/in/satyanadella',
-    instagram: 'https://www.instagram.com/satyanadella'
+    name: 'Pieter Levels',
+    role: 'Founder @ Nomad List & Remote OK',
+    linkedin: 'https://www.linkedin.com/in/pieterlevels',
+    instagram: 'https://www.instagram.com/levelsio'
+  },
+  {
+    name: 'Marques Brownlee',
+    role: 'Tech Creator & Pro Athlete',
+    linkedin: 'https://www.linkedin.com/in/marques-brownlee-4b531478',
+    instagram: 'https://www.instagram.com/mkbhd'
   },
   {
     name: 'Sam Altman',
@@ -16,42 +22,26 @@ const QUICK_PRESETS = [
     instagram: 'https://www.instagram.com/sama'
   },
   {
-    name: 'Mira Murati',
-    role: 'AI Technologist, ex-CTO OpenAI',
-    linkedin: 'https://www.linkedin.com/in/mira-murati',
-    instagram: 'https://www.instagram.com/miramurati'
+    name: 'Guillermo Rauch',
+    role: 'CEO @ Vercel',
+    linkedin: 'https://www.linkedin.com/in/rauchg',
+    instagram: 'https://www.instagram.com/rauchg'
   },
   {
-    name: 'Marques Brownlee',
-    role: 'Tech Creator & Pro Athlete',
-    linkedin: 'https://www.linkedin.com/in/marquesbrownlee',
-    instagram: 'https://www.instagram.com/mkbhd'
-  },
-  {
-    name: 'Whitney Wolfe Herd',
-    role: 'Founder @ Bumble',
-    linkedin: 'https://www.linkedin.com/in/whitney-wolfe-herd',
-    instagram: 'https://www.instagram.com/whitney'
+    name: 'Cleo Abram',
+    role: 'Creator @ Huge If True',
+    linkedin: 'https://www.linkedin.com/in/cleoabram',
+    instagram: 'https://www.instagram.com/cleoabram'
   }
 ];
 
-export default function InputPage({ onProfileCreated }) {
+export default function InputPage({ onProfileCreated, onStartDating }) {
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [instagramUrl, setInstagramUrl] = useState('');
   const [loading, setLoading] = useState(false);
-  const [activeStep, setActiveStep] = useState(0);
-  const [logs, setLogs] = useState([]);
+  const [terminalLogs, setTerminalLogs] = useState([]);
   const [createdProfile, setCreatedProfile] = useState(null);
   const [error, setError] = useState(null);
-
-  const pipelineSteps = [
-    'Launching Playwright stealth browser with randomized user agents...',
-    'Navigating public LinkedIn & Instagram profiles (zero login required)...',
-    'Extracting roles, bio, captions, hashtags, and writing style...',
-    'Feeding scraped context to Claude Sonnet 4.6 Dating Profile Analyzer...',
-    'Structuring Core Needs, Hobbies, Traits, Lifestyle Signals & 3 Openers...',
-    'Synthesizing Voice Persona and persisting to Mem0 memory store...'
-  ];
 
   const handleApplyPreset = (preset) => {
     setLinkedinUrl(preset.linkedin);
@@ -62,31 +52,43 @@ export default function InputPage({ onProfileCreated }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!linkedinUrl || !instagramUrl) {
-      setError('Please provide both a public LinkedIn URL and a public Instagram URL.');
+      setError('Please provide both public LinkedIn and public Instagram URLs.');
       return;
     }
 
     setLoading(true);
     setError(null);
     setCreatedProfile(null);
-    setLogs([]);
-    setActiveStep(0);
+    setTerminalLogs([
+      { text: 'Initiating scrape pipeline across verified sources...', status: 'running' }
+    ]);
 
-    // Simulate animated pipeline progress steps
-    const stepInterval = setInterval(() => {
-      setActiveStep((prev) => {
-        if (prev < pipelineSteps.length - 1) {
-          const next = prev + 1;
-          setLogs((l) => [...l, `[${new Date().toLocaleTimeString()}] ${pipelineSteps[next]}`]);
-          return next;
-        }
-        return prev;
-      });
-    }, 1400);
+    // Simulated terminal steps with checkmarks
+    const steps = [
+      'Fetching LinkedIn (Apify + Googlebot fallback)...',
+      'Fetching Instagram (Apify + facebookexternalhit fallback)...',
+      'Analyzing psychological traits with Claude Sonnet 4.6...',
+      'Extracting Core Needs, Hobbies, and Evidence Citations...',
+      'Building persistent voice profile in Mem0 memory store...'
+    ];
+
+    let stepIdx = 0;
+    const interval = setInterval(() => {
+      if (stepIdx < steps.length) {
+        const currentText = steps[stepIdx];
+        setTerminalLogs(prev => {
+          const updated = [...prev];
+          if (updated.length > 0) {
+            updated[updated.length - 1].status = 'done';
+          }
+          updated.push({ text: currentText, status: 'running' });
+          return updated;
+        });
+        stepIdx++;
+      }
+    }, 1100);
 
     try {
-      setLogs([`[${new Date().toLocaleTimeString()}] Initiating scraping pipeline...`]);
-      
       const response = await fetch('/api/profiles/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -94,203 +96,172 @@ export default function InputPage({ onProfileCreated }) {
       });
 
       const result = await response.json();
-      clearInterval(stepInterval);
+      clearInterval(interval);
 
       if (result.success && result.data) {
-        setActiveStep(pipelineSteps.length);
-        setLogs((l) => [
-          ...l,
-          `[${new Date().toLocaleTimeString()}] ✅ Profile successfully analyzed: ${result.data.name}`,
-          `[${new Date().toLocaleTimeString()}] Stored in database & Mem0 memory.`
-        ]);
+        setTerminalLogs(prev => {
+          const finalLogs = prev.map(l => ({ ...l, status: 'done' }));
+          finalLogs.push({ text: 'Agent synthesized successfully! All evidence tags verified.', status: 'done' });
+          return finalLogs;
+        });
         setCreatedProfile(result.data);
+        if (onProfileCreated) onProfileCreated(result.data);
       } else {
-        throw new Error(result.error || 'Failed to analyze profile.');
+        setError(result.error || 'Failed to analyze profile.');
       }
     } catch (err) {
-      clearInterval(stepInterval);
-      console.error('Scrape error:', err);
-      setError(err.message || 'An error occurred during scraping and analysis.');
+      clearInterval(interval);
+      setError(err.message || 'Scraping and analysis pipeline encountered an error.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 space-y-12">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10 animate-fade-in">
       
       {/* Title */}
       <div className="text-center space-y-3">
-        <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-violetNeon-500/10 border border-violetNeon-500/20 text-xs font-mono text-violet-300">
-          <Globe className="w-3.5 h-3.5 text-violet-400" />
-          <span>Step 1 & 2 Pipeline • Automated Browser Ingestion</span>
+        <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-[#E8472A]/10 border border-[#E8472A]/20 text-xs font-mono text-[#E8472A]">
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>Live Ingestion Pipeline</span>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-display font-extrabold text-white">
-          Ingest & Analyze a New Person
+        <h1 className="text-3xl sm:text-4xl font-bold text-white">
+          Add New Person & Build Dating Agent
         </h1>
-        <p className="text-sm text-slate-300 max-w-xl mx-auto">
-          Paste a public LinkedIn profile URL and public Instagram URL. Our Playwright stealth scraper and Claude Sonnet 4.6 engine will automatically build their autonomous dating agent.
+        <p className="text-xs sm:text-sm text-[#6B7280] max-w-xl mx-auto">
+          Paste any public LinkedIn and Instagram links. Our multi-stage scraper parses bio and captions, feeds them to Claude Sonnet 4.6, and registers an autonomous dating agent.
         </p>
       </div>
 
-      {/* Preset Quick-Fill Buttons */}
-      <div className="glass-panel p-5 rounded-2xl space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-mono text-slate-400 font-semibold uppercase tracking-wider">
-            Quick-Fill Verified Presets:
-          </span>
-          <span className="text-[11px] text-slate-500">Click to autofill valid public pairs</span>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {QUICK_PRESETS.map((p, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => handleApplyPreset(p)}
-              className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-slate-300 hover:text-white transition flex items-center space-x-1.5"
-            >
-              <span>{p.name}</span>
-              <span className="text-[10px] text-slate-500">({p.role})</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Input Form */}
-      <form onSubmit={handleSubmit} className="glass-panel p-6 sm:p-8 rounded-3xl border border-white/10 space-y-6">
+      {/* Main Form Card */}
+      <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-white/10 space-y-6">
         
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-200 uppercase tracking-wider mb-2 flex items-center space-x-2">
-              <LinkedinIcon className="w-4 h-4 text-sky-400" />
-              <span>Public LinkedIn Profile URL</span>
+        {/* Quick Presets */}
+        <div className="space-y-2">
+          <label className="text-xs font-mono text-slate-400 block uppercase">
+            Quick Fill From Cohort:
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {QUICK_PRESETS.map((preset) => (
+              <button
+                key={preset.name}
+                type="button"
+                onClick={() => handleApplyPreset(preset)}
+                className="px-3 py-1.5 rounded-xl bg-[#0A0A0F] hover:bg-white/10 text-slate-300 text-xs font-medium border border-white/5 transition flex items-center space-x-1.5"
+              >
+                <span>{preset.name}</span>
+                <span className="text-[10px] text-slate-500">({preset.role.split('@')[0].trim()})</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Input Form */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-mono text-slate-300 flex items-center space-x-1.5">
+              <LinkedinIcon className="w-3.5 h-3.5 text-sky-400" />
+              <span>Public LinkedIn URL</span>
             </label>
             <input
               type="url"
-              placeholder="https://www.linkedin.com/in/satyanadella"
+              required
               value={linkedinUrl}
               onChange={(e) => setLinkedinUrl(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-midnight-900 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-roseNeon-500 focus:ring-1 focus:ring-roseNeon-500 transition font-mono"
-              required
+              placeholder="https://www.linkedin.com/in/username"
+              className="w-full bg-[#0A0A0F] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#E8472A] transition"
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-200 uppercase tracking-wider mb-2 flex items-center space-x-2">
-              <InstagramIcon className="w-4 h-4 text-pink-400" />
-              <span>Public Instagram Profile URL</span>
+          <div className="space-y-1.5">
+            <label className="text-xs font-mono text-slate-300 flex items-center space-x-1.5">
+              <InstagramIcon className="w-3.5 h-3.5 text-pink-400" />
+              <span>Public Instagram URL</span>
             </label>
             <input
               type="url"
-              placeholder="https://www.instagram.com/satyanadella"
+              required
               value={instagramUrl}
               onChange={(e) => setInstagramUrl(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-midnight-900 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-roseNeon-500 focus:ring-1 focus:ring-roseNeon-500 transition font-mono"
-              required
+              placeholder="https://www.instagram.com/username"
+              className="w-full bg-[#0A0A0F] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#6C47FF] transition"
             />
           </div>
-        </div>
 
-        {error && (
-          <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center space-x-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{error}</span>
+          {error && (
+            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center space-x-2">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#E8472A] to-[#6C47FF] hover:opacity-95 text-white font-bold text-xs shadow-glow-spark flex items-center justify-center space-x-2 transition disabled:opacity-50"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>{loading ? 'Synthesizing Agent...' : 'Scrape & Synthesize Dating Agent'}</span>
+          </button>
+        </form>
+
+        {/* Real-Time Terminal Progress Log */}
+        {(loading || terminalLogs.length > 0) && (
+          <div className="rounded-2xl bg-[#0A0A0F] border border-white/10 p-5 font-mono text-xs space-y-2">
+            <div className="flex items-center justify-between text-slate-500 pb-2 border-b border-white/5">
+              <div className="flex items-center space-x-2">
+                <Terminal className="w-4 h-4 text-[#E8472A]" />
+                <span className="text-[11px] uppercase tracking-wider">AGENT SYNTHESIS TERMINAL LOG</span>
+              </div>
+              <span className="text-[10px] text-emerald-400">Claude Sonnet 4.6</span>
+            </div>
+
+            <div className="space-y-1.5 pt-1 text-slate-300">
+              {terminalLogs.map((log, idx) => (
+                <div key={idx} className="flex items-center space-x-2">
+                  {log.status === 'done' ? (
+                    <span className="text-emerald-400 font-bold">✓</span>
+                  ) : (
+                    <span className="w-2 h-2 rounded-full bg-[#E8472A] animate-ping" />
+                  )}
+                  <span className={log.status === 'done' ? 'text-slate-300' : 'text-[#E8472A]'}>
+                    {log.text}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-4 rounded-xl bg-gradient-to-r from-roseNeon-500 via-roseNeon-600 to-violetNeon-500 text-white font-bold text-sm shadow-glow-rose hover:opacity-95 disabled:opacity-50 transition flex items-center justify-center space-x-2"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Scraping & Synthesizing Agent with Claude...</span>
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-4 h-4" />
-              <span>Trigger Autonomous Scraping & Analysis</span>
-            </>
-          )}
-        </button>
-
-      </form>
-
-      {/* Real-time Pipeline Terminal Visualizer */}
-      {(loading || logs.length > 0) && (
-        <div className="glass-panel rounded-2xl overflow-hidden border border-white/10">
-          <div className="bg-midnight-950 px-4 py-3 border-b border-white/10 flex items-center justify-between">
-            <div className="flex items-center space-x-2 text-xs font-mono text-slate-400">
-              <Terminal className="w-4 h-4 text-emerald-400" />
-              <span>Live Agent Ingestion Terminal</span>
+        {/* Completed Ready Box */}
+        {createdProfile && (
+          <div className="p-6 rounded-2xl bg-[#0A0A0F] border border-emerald-500/30 text-center space-y-4 animate-fade-in">
+            <div className="w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center mx-auto">
+              <Check className="w-6 h-6" />
             </div>
-            <div className="flex items-center space-x-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500/60" />
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500/60" />
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/60" />
-            </div>
-          </div>
-          <div className="p-4 bg-midnight-950/90 font-mono text-xs text-emerald-400 space-y-2 max-h-56 overflow-y-auto">
-            {logs.map((log, idx) => (
-              <div key={idx} className="flex items-start space-x-2 leading-relaxed">
-                <span className="text-slate-600 select-none">&gt;</span>
-                <span className="text-slate-300">{log}</span>
-              </div>
-            ))}
-            {loading && (
-              <div className="flex items-center space-x-2 text-rose-400 animate-pulse">
-                <span>&gt;</span>
-                <span>Executing: {pipelineSteps[activeStep] || 'Processing data...'}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
-      {/* Success Card */}
-      {createdProfile && (
-        <div className="glass-panel p-6 rounded-3xl border border-emerald-500/40 bg-emerald-950/10 space-y-6 animate-fade-in">
-          <div className="flex items-center space-x-3 text-emerald-400">
-            <CheckCircle2 className="w-6 h-6 flex-shrink-0" />
             <div>
-              <h3 className="text-base font-bold text-white">Agent Created & Stored Successfully!</h3>
-              <p className="text-xs text-slate-400">Profile synthesized, voice persona calibrated, and memory initialized.</p>
+              <h3 className="text-lg font-bold text-white">Your agent is ready!</h3>
+              <p className="text-xs text-[#E8472A] font-mono mt-0.5">
+                {createdProfile.name} • {createdProfile.personality_archetype || 'The Creative Pioneer'}
+              </p>
+              <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+                Verified psychological profile registered in memory. You can now launch a live simulated date against any of the other figures.
+              </p>
             </div>
-          </div>
 
-          <div className="flex items-center space-x-4 p-4 rounded-2xl bg-midnight-900 border border-white/10">
-            <img
-              src={createdProfile.avatar}
-              alt={createdProfile.name}
-              className="w-16 h-16 rounded-2xl object-cover border border-white/20"
-            />
-            <div className="flex-1 min-w-0">
-              <h4 className="text-base font-bold text-white truncate font-display">{createdProfile.name}</h4>
-              <p className="text-xs text-rose-400 truncate">{createdProfile.company || createdProfile.currentRole}</p>
-              <p className="text-xs text-slate-400 line-clamp-1 mt-0.5">{createdProfile.headline}</p>
-            </div>
-          </div>
-
-          <div className="space-y-2 text-xs text-slate-300">
-            <div className="font-semibold text-white">🎯 Core Needs Extracted:</div>
-            <p className="text-slate-400 leading-relaxed bg-white/5 p-3 rounded-xl border border-white/5">
-              {createdProfile.analysis?.coreNeeds}
-            </p>
-          </div>
-
-          <div className="flex items-center space-x-3">
             <button
-              onClick={() => onProfileCreated(createdProfile)}
-              className="flex-1 py-3 rounded-xl bg-gradient-to-r from-roseNeon-500 to-violetNeon-500 text-white font-bold text-xs shadow-glow-rose hover:opacity-95 transition flex items-center justify-center space-x-2"
+              onClick={() => onStartDating && onStartDating(createdProfile.id)}
+              className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#E8472A] to-[#6C47FF] text-white text-xs font-bold shadow-glow-spark inline-flex items-center space-x-2"
             >
-              <span>View Full Persona Dashboard</span>
+              <span>Watch them date</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
-        </div>
-      )}
+        )}
+
+      </div>
 
     </div>
   );

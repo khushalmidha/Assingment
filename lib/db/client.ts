@@ -1,0 +1,19 @@
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
+import * as schema from './schema';
+
+const connectionString = process.env.DATABASE_URL || '';
+
+export const client = connectionString ? postgres(connectionString, { max: 1 }) : null;
+export const db = client ? drizzle(client, { schema }) : null;
+
+export async function checkDbConnection(): Promise<boolean> {
+  if (!client) return false;
+  try {
+    await client`SELECT 1`;
+    return true;
+  } catch (err) {
+    console.warn('[DB] Supabase/Postgres connection fallback active:', err);
+    return false;
+  }
+}

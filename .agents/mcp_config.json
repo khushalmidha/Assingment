@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "agentic-dating": {
+      "command": "node",
+      "args": ["scripts/mcp-server.js"]
+    },
+    "apify": {
+      "command": "npx",
+      "args": ["-y", "@apify/actors-mcp-server"],
+      "env": {
+        "APIFY_TOKEN": "${APIFY_TOKEN}"
+      }
+    }
+  }
+}

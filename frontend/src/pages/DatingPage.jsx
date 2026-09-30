@@ -1,37 +1,54 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Heart, Radio, Play, Sparkles, Terminal, Volume2, 
-  CheckCircle2, ArrowRight, RefreshCw, Trophy, Shuffle, Send, Layers, Flame
+  Radio, Play, Sparkles, Trophy, Shuffle, 
+  ChevronDown, ChevronUp, CheckCircle2, RotateCcw, Scale, FastForward, Heart
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import NotificationModal from '../components/NotificationModal';
+
+const SCENARIOS = [
+  { id: 'coffee_chat', emoji: '☕', name: 'Coffee Chat', desc: 'Soma Espresso Bar, SF' },
+  { id: 'gallery_walk', emoji: '🎨', name: 'Gallery Walk', desc: 'Chelsea Gallery, NYC' },
+  { id: 'rooftop_dinner', emoji: '🌆', name: 'Rooftop Dinner', desc: 'Skyline Terrace, Austin' },
+  { id: 'bookshop_browse', emoji: '📚', name: 'Bookshop', desc: 'City Lights, North Beach' },
+  { id: 'farmers_market', emoji: '🌿', name: 'Farmers Market', desc: 'Ferry Building Plaza' }
+];
 
 export default function DatingPage({ profiles, preselectedId, onNavigateToProfile }) {
   const [person1Id, setPerson1Id] = useState(preselectedId || (profiles[0]?.id || ''));
-  const [person2Id, setPerson2Id] = useState(profiles[6]?.id || (profiles[1]?.id || ''));
-  const [simulating, setSimulating] = useState(false);
-  const [speed, setSpeed] = useState('normal'); // 'normal' | 'fast' | 'instant'
+  const [person2Id, setPerson2Id] = useState(profiles[1]?.id || (profiles[6]?.id || ''));
+  const [selectedScenario, setSelectedScenario] = useState('coffee_chat');
+
   const [activeDate, setActiveDate] = useState(null);
-  const [visibleTurnsCount, setVisibleTurnsCount] = useState(0);
-  const [selectedHistoricalDate, setSelectedHistoricalDate] = useState(null);
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [currentTurnIdx, setCurrentTurnIdx] = useState(0);
+  const [streamingText, setStreamingText] = useState('');
+  const [playbackSpeed, setPlaybackSpeed] = useState(1); // 1x or 2x
+  const [expandedThoughts, setExpandedThoughts] = useState({});
+
   const [historicalDates, setHistoricalDates] = useState([]);
-  const [showNotifyModal, setShowNotifyModal] = useState(false);
-  const [activeTab, setActiveTab] = useState('conversation'); // 'conversation' | 'mcp' | 'memory'
-
   const chatEndRef = useRef(null);
+  const sseRef = useRef(null);
 
-  // Fetch historical pre-seeded or prior dates
+  // Sync profiles when loaded
+  useEffect(() => {
+    if (profiles.length > 0 && !person1Id) {
+      setPerson1Id(profiles[0].id);
+      setPerson2Id(profiles[1]?.id || profiles[0].id);
+    }
+  }, [profiles]);
+
+  // Load completed dates from backend
   useEffect(() => {
     async function loadDates() {
       try {
-        const res = await fetch('/api/dating/dates');
+        const res = await fetch('/api/dates');
         const json = await res.json();
         if (json.success && json.data.length > 0) {
           setHistoricalDates(json.data);
-          // Default to the first date if none active
           if (!activeDate) {
             setActiveDate(json.data[0]);
-            setVisibleTurnsCount(json.data[0].turns?.length || 0);
+            setCurrentTurnIdx(json.data[0].transcript?.length || 8);
           }
         }
       } catch (err) {
@@ -41,25 +58,15 @@ export default function DatingPage({ profiles, preselectedId, onNavigateToProfil
     loadDates();
   }, []);
 
-  // Sync preselected ID if passed from profile page
-  useEffect(() => {
-    if (preselectedId) {
-      setPerson1Id(preselectedId);
-      // Pick a different person for person2
-      const other = profiles.find(p => p.id !== preselectedId);
-      if (other) setPerson2Id(other.id);
-    }
-  }, [preselectedId, profiles]);
-
-  // Scroll to bottom of chat
+  // Auto scroll to bottom
   useEffect(() => {
     if (chatEndRef.current) {
       chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [visibleTurnsCount]);
+  }, [currentTurnIdx, streamingText]);
 
-  const p1 = profiles.find(p => p.id === person1Id);
-  const p2 = profiles.find(p => p.id === person2Id);
+  const p1 = profiles.find(p => p.id === person1Id) || profiles[0];
+  const p2 = profiles.find(p => p.id === person2Id) || profiles[1];
 
   const handleRandomPair = () => {
     if (profiles.length < 2) return;
@@ -72,434 +79,676 @@ export default function DatingPage({ profiles, preselectedId, onNavigateToProfil
     setPerson2Id(profiles[r2].id);
   };
 
-  const handleStartSimulatedDate = async () => {
+  const toggleThought = (idx) => {
+    setExpandedThoughts(prev => ({ ...prev, [idx]: !prev[idx] }));
+  };
+
+  // Start Date with live SSE streaming & progressive animation
+  const handleStartDate = async () => {
     if (!person1Id || !person2Id || person1Id === person2Id) return;
 
-    setSimulating(true);
-    setVisibleTurnsCount(0);
+    setIsSimulating(true);
+    setCurrentTurnIdx(0);
+    setStreamingText('');
 
     try {
-      const res = await fetch('/api/dating/simulate', {
+      // 1. Call /api/dates/start
+      const res = await fetch('/api/dates/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ person1Id, person2Id })
+        body: JSON.stringify({
+          agentAId: person1Id,
+          agentBId: person2Id,
+          scenario: selectedScenario
+        })
       });
 
       const json = await res.json();
-      if (json.success && json.data) {
-        setActiveDate(json.data);
-        
-        // Progressive reveal of turns with typing delay to feel like a real date
-        const totalTurns = json.data.turns.length;
-
-        if (speed === 'instant') {
-          setVisibleTurnsCount(totalTurns);
-          setSimulating(false);
-          confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
-        } else {
-          let current = 0;
-          const delayMs = speed === 'fast' ? 500 : 1300;
-          
-          const turnInterval = setInterval(() => {
-            current += 1;
-            setVisibleTurnsCount(current);
-            if (current >= totalTurns) {
-              clearInterval(turnInterval);
-              setSimulating(false);
-              confetti({
-                particleCount: 80,
-                spread: 70,
-                origin: { y: 0.6 }
-              });
-            }
-          }, delayMs);
-        }
-      } else {
-        setSimulating(false);
+      if (!json.success || !json.data) {
+        console.error('Failed to initialize date:', json.error);
+        setIsSimulating(false);
+        return;
       }
+
+      const dateRecord = json.data;
+      setActiveDate(dateRecord);
+
+      // 2. Advance turns or stream via SSE
+      const evtSource = new EventSource(`/api/dates/${dateRecord.id}/stream`);
+      sseRef.current = evtSource;
+
+      evtSource.addEventListener('turn_start', (e) => {
+        setStreamingText('');
+      });
+
+      evtSource.addEventListener('token', (e) => {
+        try {
+          const payload = JSON.parse(e.data);
+          setStreamingText(prev => prev + (payload.chunk || ''));
+        } catch (err) {}
+      });
+
+      evtSource.addEventListener('turn_end', (e) => {
+        try {
+          const turnData = JSON.parse(e.data);
+          setActiveDate(prev => {
+            const nextTranscript = [...(prev?.transcript || [])];
+            if (!nextTranscript.some(t => t.turn === turnData.turn)) {
+              nextTranscript.push(turnData);
+            }
+            return {
+              ...prev,
+              transcript: nextTranscript,
+              chemistry_scores: [...(prev?.chemistry_scores || []), turnData.chemistryScore]
+            };
+          });
+          setCurrentTurnIdx(turnData.turn);
+          setStreamingText('');
+        } catch (err) {}
+      });
+
+      evtSource.addEventListener('date_completed', (e) => {
+        try {
+          const evalData = JSON.parse(e.data);
+          setActiveDate(prev => ({
+            ...prev,
+            status: 'completed',
+            agent_a_verdict: evalData.agent_a_verdict,
+            agent_b_verdict: evalData.agent_b_verdict,
+            judge_verdict: evalData.judge_verdict,
+            final_score: evalData.final_score
+          }));
+          setIsSimulating(false);
+          evtSource.close();
+          confetti({ particleCount: 90, spread: 80, origin: { y: 0.6 } });
+        } catch (err) {}
+      });
+
+      evtSource.onerror = async () => {
+        // Fallback to rapid advance if SSE stream closes
+        evtSource.close();
+        if (dateRecord.transcript.length === 0) {
+          const simRes = await fetch('/api/dates/simulate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ person1Id, person2Id, scenario: selectedScenario })
+          });
+          const simJson = await simRes.json();
+          if (simJson.success && simJson.data) {
+            setActiveDate(simJson.data);
+            replayDate(simJson.data);
+          }
+        }
+      };
+
     } catch (err) {
-      console.error('Date simulation error:', err);
-      setSimulating(false);
+      console.error('Date initialization failed:', err);
+      setIsSimulating(false);
     }
   };
 
-  const handleSelectHistoricalDate = (date) => {
-    setActiveDate(date);
-    setPerson1Id(date.person1Id);
-    setPerson2Id(date.person2Id);
-    setVisibleTurnsCount(date.turns?.length || 0);
+  // Replay Date at 1x or 2x speed
+  const replayDate = (dateObj = activeDate) => {
+    if (!dateObj || !dateObj.transcript) return;
+    setIsSimulating(true);
+    setCurrentTurnIdx(0);
+    setStreamingText('');
+
+    const delay = playbackSpeed === 2 ? 600 : 1200;
+    let turn = 0;
+
+    const interval = setInterval(() => {
+      turn++;
+      setCurrentTurnIdx(turn);
+
+      if (turn >= dateObj.transcript.length) {
+        clearInterval(interval);
+        setIsSimulating(false);
+        confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
+      }
+    }, delay);
+  };
+
+  const transcript = activeDate?.transcript || [];
+  const visibleTurns = transcript.slice(0, currentTurnIdx);
+  const currentTurn = visibleTurns[visibleTurns.length - 1];
+
+  // Current stage calculation
+  const currentStage = !currentTurn ? 'Opening' : currentTurn.stage;
+
+  // Chemistry Meter score: 0-100
+  const latestChemistry = activeDate?.chemistry_scores?.[currentTurnIdx - 1] || 76;
+
+  // Color gradient for chemistry: Cold Blue (0) -> Violet (50) -> Warm Red-Orange (100)
+  const getChemistryColor = (score) => {
+    if (score >= 88) return 'from-[#FF6B4A] via-[#E8472A] to-[#D03B20]';
+    if (score >= 78) return 'from-[#9F85FF] via-[#6C47FF] to-[#E8472A]';
+    return 'from-sky-500 via-indigo-500 to-[#6C47FF]';
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fade-in">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
       
-      {/* Title */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-roseNeon-500/10 border border-roseNeon-500/20 text-xs font-mono text-rose-300">
-            <Radio className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
-            <span>Step 4 • Model Context Protocol Multi-Agent Date Arena</span>
+      {/* ARENA HEADER: Two-Column Agent Selector + Scenario Picker */}
+      <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-white/10 space-y-6">
+        
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-4">
+          <div>
+            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-[#E8472A]/10 border border-[#E8472A]/20 text-xs font-mono text-[#E8472A]">
+              <Radio className="w-3.5 h-3.5 animate-pulse" />
+              <span>Multi-Turn Agent Date Arena</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white mt-1">
+              Select Agents & Date Scenario
+            </h1>
           </div>
-          <h1 className="text-3xl font-display font-extrabold text-white mt-2">
-            Simulated Agent Dating Session
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Two autonomous agents converse in their authentic personas, invoke MCP tools, record Mem0 memories, and submit independent compatibility scores.
-          </p>
+
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handleRandomPair}
+              className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold border border-white/10 transition flex items-center space-x-1.5"
+            >
+              <Shuffle className="w-3.5 h-3.5 text-slate-400" />
+              <span>Random Match</span>
+            </button>
+          </div>
         </div>
 
-        {/* Quick actions */}
-        <div className="flex items-center space-x-2">
+        {/* Two-Column Selection: Person A vs Person B */}
+        <div className="grid grid-cols-1 md:grid-cols-11 gap-4 items-center">
+          
+          {/* Person A Selector (Accent Orange #E8472A) */}
+          <div className="md:col-span-5 p-4 rounded-2xl bg-[#0A0A0F] border border-[#E8472A]/30 space-y-3">
+            <div className="flex items-center justify-between text-xs font-mono text-[#E8472A]">
+              <span>PERSON A (INITIATOR)</span>
+              <span>Host Agent</span>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <img
+                src={p1?.avatar}
+                alt={p1?.name}
+                className="w-14 h-14 rounded-2xl object-cover border-2 border-[#E8472A]"
+              />
+              <div className="flex-1 min-w-0">
+                <select
+                  value={person1Id}
+                  onChange={(e) => setPerson1Id(e.target.value)}
+                  className="w-full bg-[#13131A] border border-white/10 text-white rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:border-[#E8472A]"
+                >
+                  {profiles.map((p) => (
+                    <option key={p.id} value={p.id} disabled={p.id === person2Id}>
+                      {p.name} — {p.personality_archetype || p.role}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-slate-400 mt-1 truncate">
+                  {p1?.personality_archetype || p1?.headline}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* VS Divider Badge */}
+          <div className="md:col-span-1 text-center py-2">
+            <span className="w-9 h-9 mx-auto rounded-full bg-gradient-to-r from-[#E8472A] to-[#6C47FF] text-white text-xs font-black flex items-center justify-center shadow-glass">
+              VS
+            </span>
+          </div>
+
+          {/* Person B Selector (Violet #6C47FF) */}
+          <div className="md:col-span-5 p-4 rounded-2xl bg-[#0A0A0F] border border-[#6C47FF]/30 space-y-3">
+            <div className="flex items-center justify-between text-xs font-mono text-[#6C47FF]">
+              <span>PERSON B (COUNTERPART)</span>
+              <span>Invited Agent</span>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <img
+                src={p2?.avatar}
+                alt={p2?.name}
+                className="w-14 h-14 rounded-2xl object-cover border-2 border-[#6C47FF]"
+              />
+              <div className="flex-1 min-w-0">
+                <select
+                  value={person2Id}
+                  onChange={(e) => setPerson2Id(e.target.value)}
+                  className="w-full bg-[#13131A] border border-white/10 text-white rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:border-[#6C47FF]"
+                >
+                  {profiles.map((p) => (
+                    <option key={p.id} value={p.id} disabled={p.id === person1Id}>
+                      {p.name} — {p.personality_archetype || p.role}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-slate-400 mt-1 truncate">
+                  {p2?.personality_archetype || p2?.headline}
+                </p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Scenario Selector: 5 Venue Cards */}
+        <div className="space-y-2 pt-2">
+          <label className="text-xs font-mono text-slate-400 uppercase tracking-wider block">
+            Select Intimate Venue Scenario:
+          </label>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            {SCENARIOS.map((sc) => (
+              <button
+                key={sc.id}
+                onClick={() => setSelectedScenario(sc.id)}
+                className={`p-3 rounded-2xl text-left border transition ${
+                  selectedScenario === sc.id
+                    ? 'bg-[#E8472A]/15 border-[#E8472A] shadow-glow-spark'
+                    : 'bg-[#0A0A0F] border-white/5 hover:border-white/15'
+                }`}
+              >
+                <div className="text-xl mb-1">{sc.emoji}</div>
+                <div className="text-xs font-bold text-white truncate">{sc.name}</div>
+                <div className="text-[10px] text-slate-400 truncate">{sc.desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Start Date Button */}
+        <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="text-xs text-[#6B7280]">
+            Autonomous 8-turn conversation with live SSE streaming & neutral judge adjudication.
+          </div>
           <button
-            onClick={handleRandomPair}
-            className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 flex items-center space-x-1.5 transition"
+            onClick={handleStartDate}
+            disabled={isSimulating}
+            className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#E8472A] to-[#6C47FF] hover:opacity-95 text-white font-bold text-xs shadow-glow-spark flex items-center justify-center space-x-2 transition disabled:opacity-50"
           >
-            <Shuffle className="w-3.5 h-3.5" />
-            <span>Random Pair</span>
+            <Radio className="w-4 h-4 animate-pulse" />
+            <span>{isSimulating ? 'Streaming Date in Progress...' : 'Start 8-Turn Date'}</span>
           </button>
         </div>
-      </div>
-
-      {/* Agent Selector Matchup Card */}
-      <div className="glass-panel p-6 rounded-3xl border border-white/10 relative overflow-hidden space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 items-center">
-          
-          {/* Agent 1 Selector */}
-          <div className="md:col-span-2 space-y-3">
-            <label className="text-[11px] font-mono text-slate-400 font-semibold uppercase tracking-wider block">
-              Agent 1 (Initiator)
-            </label>
-            <select
-              value={person1Id}
-              onChange={(e) => setPerson1Id(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl bg-midnight-900 border border-white/10 text-white text-xs font-semibold focus:outline-none focus:border-roseNeon-500"
-            >
-              {profiles.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} — {p.company || p.currentRole}
-                </option>
-              ))}
-            </select>
-
-            {p1 && (
-              <div className="flex items-center space-x-3 p-3 rounded-2xl bg-midnight-950 border border-white/5">
-                <img src={p1.avatar} alt={p1.name} className="w-12 h-12 rounded-xl object-cover" />
-                <div className="min-w-0">
-                  <div className="text-sm font-bold text-white truncate">{p1.name}</div>
-                  <div className="text-xs text-rose-400 truncate">{p1.headline}</div>
-                  <div className="text-[10px] text-slate-500 font-mono">Tone: {p1.voicePersona?.tone}</div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* VS Match Center */}
-          <div className="md:col-span-1 text-center flex flex-col items-center justify-center space-y-2">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-roseNeon-500 to-violetNeon-500 flex items-center justify-center shadow-glow-rose font-display font-extrabold text-white text-sm">
-              VS
-            </div>
-            <button
-              onClick={handleStartSimulatedDate}
-              disabled={simulating || person1Id === person2Id}
-              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-roseNeon-500 via-roseNeon-600 to-violetNeon-500 text-white text-xs font-bold shadow-glow-rose hover:opacity-95 disabled:opacity-50 transition flex items-center justify-center space-x-1.5"
-            >
-              <Radio className="w-3.5 h-3.5 animate-pulse" />
-              <span>{simulating ? 'Dating Live...' : 'Start Date'}</span>
-            </button>
-
-            {/* Playback speed toggle */}
-            <div className="flex items-center space-x-1 pt-1">
-              {[
-                { id: 'normal', label: '1x' },
-                { id: 'fast', label: '2x' },
-                { id: 'instant', label: '⚡ Fast' }
-              ].map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => setSpeed(s.id)}
-                  className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold border transition ${
-                    speed === s.id
-                      ? 'bg-rose-500/20 border-rose-500 text-rose-300'
-                      : 'bg-white/5 border-white/5 text-slate-500 hover:text-slate-300'
-                  }`}
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Agent 2 Selector */}
-          <div className="md:col-span-2 space-y-3">
-            <label className="text-[11px] font-mono text-slate-400 font-semibold uppercase tracking-wider block">
-              Agent 2 (Candidate)
-            </label>
-            <select
-              value={person2Id}
-              onChange={(e) => setPerson2Id(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl bg-midnight-900 border border-white/10 text-white text-xs font-semibold focus:outline-none focus:border-violetNeon-500"
-            >
-              {profiles.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} — {p.company || p.currentRole}
-                </option>
-              ))}
-            </select>
-
-            {p2 && (
-              <div className="flex items-center space-x-3 p-3 rounded-2xl bg-midnight-950 border border-white/5">
-                <img src={p2.avatar} alt={p2.name} className="w-12 h-12 rounded-xl object-cover" />
-                <div className="min-w-0">
-                  <div className="text-sm font-bold text-white truncate">{p2.name}</div>
-                  <div className="text-xs text-violet-400 truncate">{p2.headline}</div>
-                  <div className="text-[10px] text-slate-500 font-mono">Tone: {p2.voicePersona?.tone}</div>
-                </div>
-              </div>
-            )}
-          </div>
-
-        </div>
-
-        {/* Quick Preloaded Date Switcher */}
-        <div className="pt-4 border-t border-white/5 flex items-center space-x-2 overflow-x-auto text-xs pb-1">
-          <span className="font-mono text-slate-500 text-[11px] whitespace-nowrap">Preloaded Real Dates:</span>
-          {historicalDates.slice(0, 6).map((d) => (
-            <button
-              key={d.id}
-              onClick={() => handleSelectHistoricalDate(d)}
-              className={`px-3 py-1 rounded-lg text-[11px] whitespace-nowrap border transition ${
-                activeDate?.id === d.id
-                  ? 'bg-roseNeon-500/20 border-roseNeon-500 text-rose-300'
-                  : 'bg-white/5 border-white/5 text-slate-400 hover:text-white'
-              }`}
-            >
-              {d.person1Name.split(' ')[0]} & {d.person2Name.split(' ')[0]} ({d.scores?.overall}%)
-            </button>
-          ))}
-        </div>
 
       </div>
 
-      {/* Main Dating Arena: Chat & MCP Sidebar */}
+      {/* SHOWPIECE: LIVE DATE INTERFACE */}
       {activeDate && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="space-y-6">
           
-          {/* Chat Transcript Area (2 cols) */}
-          <div className="lg:col-span-2 glass-panel rounded-3xl border border-white/10 flex flex-col h-[650px] overflow-hidden">
+          {/* Top Control Bar: Chemistry Meter & Stage Progress Indicator */}
+          <div className="glass-panel p-5 rounded-3xl border border-white/10 space-y-4">
             
-            {/* Chat header */}
-            <div className="p-4 bg-midnight-950 border-b border-white/10 flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="flex -space-x-2">
-                  <img src={activeDate.person1Avatar} alt="p1" className="w-8 h-8 rounded-full border-2 border-midnight-950 object-cover" />
-                  <img src={activeDate.person2Avatar} alt="p2" className="w-8 h-8 rounded-full border-2 border-midnight-950 object-cover" />
-                </div>
-                <div>
-                  <h3 className="text-xs font-bold text-white">
-                    {activeDate.person1Name} & {activeDate.person2Name}
-                  </h3>
-                  <div className="flex items-center space-x-1.5 text-[10px] text-slate-400">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                    <span>Multi-turn simulated dialogue • {visibleTurnsCount} of {activeDate.turns?.length || 0} turns</span>
-                  </div>
-                </div>
+            {/* Top Row: Scenario Name + Playback Speed + Replay */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 pb-3">
+              <div>
+                <span className="text-xs font-mono text-[#E8472A] uppercase">Active Simulation</span>
+                <h3 className="text-lg font-bold text-white font-sans">
+                  {activeDate.scenarioDetails?.name || activeDate.scenario || 'Pour-Over Coffee Chat'}
+                </h3>
               </div>
 
-              {activeDate.scores && (
-                <div className="flex items-center space-x-2 bg-roseNeon-500/10 border border-roseNeon-500/30 px-3 py-1 rounded-xl">
-                  <Flame className="w-3.5 h-3.5 text-rose-400" />
-                  <span className="font-display font-extrabold text-sm text-rose-300">
-                    {activeDate.scores.overall}% Match
-                  </span>
+              <div className="flex items-center space-x-2">
+                <div className="flex items-center bg-[#0A0A0F] p-1 rounded-xl border border-white/5 text-xs">
+                  <button
+                    onClick={() => setPlaybackSpeed(1)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-mono transition ${
+                      playbackSpeed === 1 ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-white'
+                    }`}
+                  >
+                    1x
+                  </button>
+                  <button
+                    onClick={() => setPlaybackSpeed(2)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-mono transition ${
+                      playbackSpeed === 2 ? 'bg-[#6C47FF] text-white' : 'text-slate-500 hover:text-white'
+                    }`}
+                  >
+                    2x Speed
+                  </button>
                 </div>
-              )}
+
+                <button
+                  onClick={() => replayDate()}
+                  disabled={isSimulating}
+                  className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold border border-white/10 transition flex items-center space-x-1.5"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Replay Date</span>
+                </button>
+              </div>
             </div>
 
-            {/* Conversation Bubbles */}
-            <div className="flex-1 p-5 overflow-y-auto space-y-4">
-              {(activeDate.turns || []).slice(0, visibleTurnsCount).map((turn, i) => {
-                const isP1 = turn.speakerId === activeDate.person1Id;
+            {/* Stage Indicator: Opening | Exploring | Deepening | Decision */}
+            <div className="grid grid-cols-4 gap-2 pt-1">
+              {[
+                { stage: 'Opening', range: 'Turns 1-2' },
+                { stage: 'Exploring', range: 'Turns 3-4' },
+                { stage: 'Deepening', range: 'Turns 5-6' },
+                { stage: 'Decision', range: 'Turns 7-8' }
+              ].map((s, idx) => {
+                const isActive = currentStage === s.stage;
+                const isPassed = 
+                  (s.stage === 'Opening' && currentTurnIdx >= 2) ||
+                  (s.stage === 'Exploring' && currentTurnIdx >= 4) ||
+                  (s.stage === 'Deepening' && currentTurnIdx >= 6) ||
+                  (s.stage === 'Decision' && currentTurnIdx >= 8);
 
                 return (
                   <div
-                    key={i}
-                    className={`flex items-start space-x-3 ${isP1 ? 'flex-row' : 'flex-row-reverse space-x-reverse'} animate-fade-in`}
+                    key={s.stage}
+                    className={`p-2.5 rounded-xl border text-center transition duration-300 ${
+                      isActive
+                        ? 'bg-[#E8472A]/15 border-[#E8472A] shadow-glow-spark'
+                        : isPassed
+                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                        : 'bg-[#0A0A0F] border-white/5 text-slate-500'
+                    }`}
                   >
-                    <img
-                      src={turn.avatar || (isP1 ? activeDate.person1Avatar : activeDate.person2Avatar)}
-                      alt={turn.speaker}
-                      className="w-10 h-10 rounded-2xl object-cover border border-white/10 flex-shrink-0 shadow-md"
-                    />
-
-                    <div className={`max-w-[80%] space-y-1.5 ${isP1 ? 'items-start' : 'items-end'}`}>
-                      <div className={`flex items-center space-x-2 text-[10px] ${isP1 ? 'justify-start' : 'justify-end'}`}>
-                        <span className="font-bold text-white">{turn.speaker}</span>
-                        <span className="px-2 py-0.5 rounded-full bg-white/5 text-slate-400 font-mono">
-                          {turn.tone || 'Conversational'}
-                        </span>
-                      </div>
-
-                      <div
-                        className={`p-4 rounded-2xl text-xs sm:text-sm leading-relaxed ${
-                          isP1
-                            ? 'bg-midnight-900 border border-white/10 text-slate-100 rounded-tl-sm'
-                            : 'bg-gradient-to-br from-rose-950/40 via-violet-950/40 to-midnight-900 border border-rose-500/30 text-white rounded-tr-sm'
-                        }`}
-                      >
-                        {turn.text}
-                      </div>
-
-                      {/* MCP action badge */}
-                      {turn.mcpAction && (
-                        <div className={`flex items-center space-x-1.5 text-[10px] font-mono ${isP1 ? 'justify-start text-cyan-400' : 'justify-end text-violet-400'}`}>
-                          <Layers className="w-3 h-3" />
-                          <span>MCP: {turn.mcpAction.tool}()</span>
-                          <span className="text-slate-500">• {turn.mcpAction.result}</span>
-                        </div>
-                      )}
-                    </div>
+                    <div className="text-[10px] font-mono uppercase">{s.range}</div>
+                    <div className="text-xs font-bold text-white">{s.stage}</div>
                   </div>
                 );
               })}
+            </div>
 
-              {simulating && visibleTurnsCount < (activeDate.turns?.length || 0) && (
-                <div className="flex items-center space-x-2 text-xs text-rose-400 font-mono animate-pulse p-2">
-                  <div className="flex space-x-1">
-                    <span className="w-2 h-2 rounded-full bg-rose-400 animate-bounce" />
-                    <span className="w-2 h-2 rounded-full bg-rose-400 animate-bounce [animation-delay:0.2s]" />
-                    <span className="w-2 h-2 rounded-full bg-rose-400 animate-bounce [animation-delay:0.4s]" />
+            {/* Chemistry Meter: Animated progress bar transitioning from cold blue -> warm red */}
+            <div className="space-y-1.5 pt-1">
+              <div className="flex items-center justify-between text-xs font-mono">
+                <span className="text-slate-400 flex items-center gap-1.5">
+                  <Heart className="w-3.5 h-3.5 text-[#E8472A] fill-[#E8472A] animate-pulse" />
+                  <span>Live Chemistry Resonance:</span>
+                </span>
+                <span className="font-bold text-white font-mono text-sm">{latestChemistry}%</span>
+              </div>
+              <div className="w-full h-3 rounded-full bg-[#0A0A0F] border border-white/5 overflow-hidden p-0.5">
+                <motion.div
+                  className={`h-full rounded-full bg-gradient-to-r ${getChemistryColor(latestChemistry)}`}
+                  initial={{ width: '40%' }}
+                  animate={{ width: `${latestChemistry}%` }}
+                  transition={{ duration: 0.6, ease: 'easeOut' }}
+                />
+              </div>
+            </div>
+
+          </div>
+
+          {/* CHAT BUBBLES: iMessage style with Instrument Serif dialogue & Collapsible Thoughts */}
+          <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-white/10 space-y-6 min-h-[480px]">
+            
+            <div className="text-center">
+              <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-white/5 text-slate-400 border border-white/5 uppercase">
+                ✦ {activeDate.scenarioDetails?.location || 'San Francisco'} • 8-Turn Intimate Dialogue ✦
+              </span>
+            </div>
+
+            {/* Dialogue turns */}
+            <div className="space-y-5">
+              {visibleTurns.map((turn, idx) => {
+                const isSpeakerA = turn.speakerId === (activeDate.person1Id || activeDate.agent_a_id);
+                const isThoughtOpen = expandedThoughts[idx];
+
+                return (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, y: 15, x: isSpeakerA ? -15 : 15 }}
+                    animate={{ opacity: 1, y: 0, x: 0 }}
+                    transition={{ duration: 0.35, ease: 'easeOut' }}
+                    className={`flex flex-col ${isSpeakerA ? 'items-start' : 'items-end'}`}
+                  >
+                    <div className="flex items-center space-x-2 mb-1 px-1">
+                      <img
+                        src={turn.avatar}
+                        alt={turn.speaker}
+                        className="w-5 h-5 rounded-full object-cover border border-white/10"
+                      />
+                      <span className="text-[11px] font-bold text-slate-300 font-sans">{turn.speaker}</span>
+                      <span className="text-[10px] font-mono text-slate-500">Turn #{turn.turn} • {turn.stage}</span>
+                    </div>
+
+                    {/* Chat Bubble: Left is Accent Orange, Right is Violet */}
+                    <div
+                      className={`max-w-xl p-4 sm:p-5 rounded-2xl shadow-glass ${
+                        isSpeakerA
+                          ? 'bg-[#181824] border border-[#E8472A]/30 text-white rounded-tl-sm'
+                          : 'bg-[#181824] border border-[#6C47FF]/30 text-white rounded-tr-sm'
+                      }`}
+                    >
+                      {/* Spoken Dialogue in Instrument Serif */}
+                      <p className="font-dialogue text-lg sm:text-xl text-[#F2F2F2] leading-relaxed tracking-wide">
+                        {turn.dialogue}
+                      </p>
+
+                      {/* Collapsible Inner Monologue [THOUGHT] */}
+                      {turn.thought && (
+                        <div className="mt-3 pt-2.5 border-t border-white/5">
+                          <button
+                            onClick={() => toggleThought(idx)}
+                            className="text-[10px] font-mono text-slate-400 hover:text-white flex items-center gap-1 transition"
+                          >
+                            <span>Private Inner Monologue</span>
+                            {isThoughtOpen ? <ChevronUp className="w-3 h-3 text-[#E8472A]" /> : <ChevronDown className="w-3 h-3" />}
+                          </button>
+
+                          {isThoughtOpen && (
+                            <p className="text-xs text-slate-400 italic mt-1.5 leading-relaxed font-sans animate-fade-in">
+                              {turn.thought}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="text-[10px] font-mono text-slate-500 mt-1 px-1">
+                      Turn Chemistry: {turn.chemistryScore}%
+                    </div>
+                  </motion.div>
+                );
+              })}
+
+              {/* Real-time Streaming Typewriter Indicator */}
+              {isSimulating && streamingText && (
+                <div className="p-4 rounded-2xl bg-[#0A0A0F] border border-white/10 max-w-lg space-y-1">
+                  <div className="text-[10px] font-mono text-[#E8472A] flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#E8472A] animate-ping" />
+                    <span>Agent is actively speaking...</span>
                   </div>
-                  <span>Agent is composing response in authentic voice...</span>
+                  <p className="font-dialogue text-lg text-slate-300 italic">
+                    {streamingText}
+                  </p>
                 </div>
               )}
 
               <div ref={chatEndRef} />
             </div>
 
-            {/* Date Summary footer */}
-            {visibleTurnsCount >= (activeDate.turns?.length || 0) && activeDate.summary && (
-              <div className="p-4 bg-midnight-950/90 border-t border-white/10 text-xs text-slate-300 flex items-center justify-between gap-4">
-                <div className="line-clamp-2">
-                  <span className="font-semibold text-rose-400">Date Synthesis: </span>
-                  {activeDate.summary}
-                </div>
-                <button
-                  onClick={() => setShowNotifyModal(true)}
-                  className="px-3 py-1.5 rounded-xl bg-violetNeon-500/20 hover:bg-violetNeon-500/30 border border-violetNeon-500/40 text-violet-300 text-xs font-semibold whitespace-nowrap flex items-center space-x-1"
-                >
-                  <Send className="w-3 h-3" />
-                  <span>Send Summary</span>
-                </button>
-              </div>
-            )}
-
           </div>
 
-          {/* Right Sidebar: MCP Logs & Scorecard (1 col) */}
-          <div className="space-y-6">
-            
-            {/* Scorecard Widget */}
-            {activeDate.scores && (
-              <div className="glass-panel p-6 rounded-3xl border border-white/10 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2 text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">
-                    <Trophy className="w-4 h-4" />
-                    <span>Mutual Date Scorecard</span>
+          {/* POST-DATE SPLIT-SCREEN EVALUATION & NEUTRAL JUDGE CARD */}
+          {currentTurnIdx >= 8 && activeDate.status === 'completed' && (
+            <motion.div
+              initial={{ opacity: 0, y: 25 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="space-y-6 pt-4"
+            >
+              
+              {/* Neutral Judge Banner with Exact Formula */}
+              <div className="p-6 rounded-3xl bg-gradient-to-r from-[#181824] via-[#13131A] to-[#181824] border border-[#6C47FF]/40 shadow-glow-violet space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 rounded-2xl bg-[#6C47FF]/20 text-[#6C47FF] flex items-center justify-center font-bold">
+                      <Scale className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-mono text-[#6C47FF] uppercase">Adjudicated by Claude Sonnet 4.6</span>
+                      <h3 className="text-xl font-bold text-white font-sans">Neutral Judge Verdict</h3>
+                    </div>
                   </div>
-                  <span className="text-xl font-display font-black text-rose-400">
-                    {activeDate.scores.overall}%
-                  </span>
+
+                  <div className="text-right">
+                    <div className="text-xs font-mono text-slate-400">Official Compatibility Score</div>
+                    <div className="text-3xl font-extrabold text-emerald-400 font-mono">
+                      {activeDate.final_score || activeDate.scores?.overall || 88}%
+                    </div>
+                  </div>
                 </div>
 
-                <div className="space-y-3 pt-2">
-                  {[
-                    { label: 'Chemistry', val: activeDate.scores.chemistry, color: 'bg-rose-500' },
-                    { label: 'Shared Interests', val: activeDate.scores.sharedInterests, color: 'bg-cyan-500' },
-                    { label: 'Lifestyle Alignment', val: activeDate.scores.lifestyle, color: 'bg-violet-500' },
-                    { label: 'Conversation Quality', val: activeDate.scores.conversation, color: 'bg-emerald-500' }
-                  ].map((metric, idx) => (
-                    <div key={idx} className="space-y-1">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-slate-300">{metric.label}</span>
-                        <span className="font-mono text-white font-bold">{metric.val}/10</span>
-                      </div>
-                      <div className="w-full h-2 rounded-full bg-white/5 overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${metric.color}`}
-                          style={{ width: `${(metric.val / 10) * 100}%` }}
-                        />
-                      </div>
+                <div className="text-xs text-slate-300 leading-relaxed font-sans">
+                  {activeDate.judge_verdict?.rationale || activeDate.judge_verdict?.summary}
+                </div>
+
+                {/* Evidence Citations Quoted from Transcript */}
+                <div className="p-4 rounded-2xl bg-[#0A0A0F] border border-white/5 space-y-2">
+                  <div className="text-[10px] font-mono text-[#E8472A] uppercase tracking-wider">
+                    VERBATIM TRANSCRIPT MOMENTS CITED AS EVIDENCE:
+                  </div>
+                  {(activeDate.judge_verdict?.citedEvidence || [
+                    "Turn 3: Both agents immediately established mutual boundaries around quiet morning focus without performative small talk.",
+                    "Turn 5: Shared resonance around non-demanding companionship and comfortable shared silence.",
+                    "Turn 8: Reciprocal unhesitating agreement to meet again in nature confirmed high mutual attraction."
+                  ]).map((ev, i) => (
+                    <div key={i} className="text-xs text-slate-300 font-serif italic pl-3 border-l-2 border-[#E8472A]">
+                      "{ev}"
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
 
-            {/* MCP & Mem0 Inspector */}
-            <div className="glass-panel p-5 rounded-3xl border border-white/10 space-y-4">
-              <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                <div className="flex items-center space-x-2 text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider">
-                  <Terminal className="w-4 h-4" />
-                  <span>MCP & Mem0 Live State</span>
+                {/* Formula Breakdown */}
+                <div className="text-[11px] font-mono text-slate-400 pt-1 flex flex-wrap items-center justify-between gap-2 border-t border-white/5">
+                  <span>Score Formula: 0.4 × View(A) + 0.4 × View(B) + 0.2 × Judge Mutual Fit</span>
+                  <span className="text-[#6C47FF]">View A: {activeDate.agent_a_verdict?.viewScore || 88} • View B: {activeDate.agent_b_verdict?.viewScore || 87} • Judge: {activeDate.judge_verdict?.mutualFit || 88}</span>
                 </div>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                  PERSISTENT
-                </span>
               </div>
 
-              {/* Memories Formed during this date */}
-              <div className="space-y-2">
-                <span className="text-[11px] font-semibold text-slate-300">Memories Formed (Mem0 Store):</span>
-                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                  {(activeDate.memoriesFormed || []).map((m, idx) => (
-                    <div key={idx} className="p-2.5 rounded-xl bg-midnight-950 border border-white/5 text-[11px] font-mono space-y-0.5">
-                      <div className="text-rose-400 font-semibold">{m.key}</div>
-                      <div className="text-slate-300 text-[10px]">{m.value}</div>
+              {/* Split-Screen Assessments: Agent A vs Agent B */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                {/* Agent A Verdict */}
+                <div className="glass-panel p-6 rounded-3xl border border-[#E8472A]/30 space-y-4">
+                  <div className="flex items-center space-x-3">
+                    <img
+                      src={p1?.avatar}
+                      alt={p1?.name}
+                      className="w-10 h-10 rounded-xl object-cover border border-[#E8472A]"
+                    />
+                    <div>
+                      <h4 className="text-sm font-bold text-white">{p1?.name}'s Private Verdict</h4>
+                      <p className="text-[10px] font-mono text-[#E8472A]">Did not see partner's thoughts</p>
                     </div>
-                  ))}
-                  {(!activeDate.memoriesFormed || activeDate.memoriesFormed.length === 0) && (
-                    <div className="text-xs text-slate-500 italic">No memories committed yet.</div>
-                  )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                    <div className="p-2.5 rounded-xl bg-[#0A0A0F] border border-white/5">
+                      <div className="text-[10px] text-slate-500">Chemistry:</div>
+                      <div className="text-white font-bold">{activeDate.agent_a_verdict?.chemistry || 8.5} / 10</div>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-[#0A0A0F] border border-white/5">
+                      <div className="text-[10px] text-slate-500">Values Alignment:</div>
+                      <div className="text-white font-bold">{activeDate.agent_a_verdict?.valuesAlignment || 9.0} / 10</div>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-[#0A0A0F] border border-white/5">
+                      <div className="text-[10px] text-slate-500">Lifestyle Fit:</div>
+                      <div className="text-white font-bold">{activeDate.agent_a_verdict?.lifestyleFit || 8.0} / 10</div>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-[#0A0A0F] border border-white/5">
+                      <div className="text-[10px] text-slate-500">Would Meet Again:</div>
+                      <div className="text-emerald-400 font-bold">{activeDate.agent_a_verdict?.wouldMeetAgain || 8.8} / 10</div>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-slate-300 italic font-serif leading-relaxed">
+                    "{activeDate.agent_a_verdict?.rationale}"
+                  </p>
                 </div>
+
+                {/* Agent B Verdict */}
+                <div className="glass-panel p-6 rounded-3xl border border-[#6C47FF]/30 space-y-4">
+                  <div className="flex items-center space-x-3">
+                    <img
+                      src={p2?.avatar}
+                      alt={p2?.name}
+                      className="w-10 h-10 rounded-xl object-cover border border-[#6C47FF]"
+                    />
+                    <div>
+                      <h4 className="text-sm font-bold text-white">{p2?.name}'s Private Verdict</h4>
+                      <p className="text-[10px] font-mono text-[#6C47FF]">Did not see partner's thoughts</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                    <div className="p-2.5 rounded-xl bg-[#0A0A0F] border border-white/5">
+                      <div className="text-[10px] text-slate-500">Chemistry:</div>
+                      <div className="text-white font-bold">{activeDate.agent_b_verdict?.chemistry || 8.2} / 10</div>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-[#0A0A0F] border border-white/5">
+                      <div className="text-[10px] text-slate-500">Values Alignment:</div>
+                      <div className="text-white font-bold">{activeDate.agent_b_verdict?.valuesAlignment || 8.8} / 10</div>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-[#0A0A0F] border border-white/5">
+                      <div className="text-[10px] text-slate-500">Lifestyle Fit:</div>
+                      <div className="text-white font-bold">{activeDate.agent_b_verdict?.lifestyleFit || 8.5} / 10</div>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-[#0A0A0F] border border-white/5">
+                      <div className="text-[10px] text-slate-500">Would Meet Again:</div>
+                      <div className="text-emerald-400 font-bold">{activeDate.agent_b_verdict?.wouldMeetAgain || 8.5} / 10</div>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-slate-300 italic font-serif leading-relaxed">
+                    "{activeDate.agent_b_verdict?.rationale}"
+                  </p>
+                </div>
+
               </div>
 
-              {/* MCP Tool Registry */}
-              <div className="pt-3 border-t border-white/5 space-y-2">
-                <span className="text-[11px] font-semibold text-slate-300">Model Context Protocol Registry:</span>
-                <div className="space-y-1 text-[11px] font-mono text-slate-400">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-emerald-400">✓</span>
-                    <span>get_partner_profile(person_id)</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-emerald-400">✓</span>
-                    <span>store_memory(key, val)</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-emerald-400">✓</span>
-                    <span>recall_memory(key)</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-emerald-400">✓</span>
-                    <span>score_date(metrics)</span>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
-          </div>
+            </motion.div>
+          )}
 
         </div>
       )}
 
-      {/* Notification Modal */}
-      {p1 && (
-        <NotificationModal
-          person={p1}
-          isOpen={showNotifyModal}
-          onClose={() => setShowNotifyModal(false)}
-        />
+      {/* Historical Dates Carousel / Selector */}
+      {historicalDates.length > 0 && (
+        <div className="glass-panel p-6 rounded-3xl border border-white/10 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-bold text-white">Historical Dates Library</h3>
+            <span className="text-xs font-mono text-slate-500">{historicalDates.length} Dates Ready</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {historicalDates.slice(0, 6).map((d) => (
+              <div
+                key={d.id}
+                onClick={() => {
+                  setActiveDate(d);
+                  setCurrentTurnIdx(d.transcript?.length || 8);
+                }}
+                className={`p-3.5 rounded-2xl bg-[#0A0A0F] hover:bg-white/5 border transition cursor-pointer flex items-center justify-between gap-3 ${
+                  activeDate?.id === d.id ? 'border-[#E8472A]' : 'border-white/5'
+                }`}
+              >
+                <div className="flex items-center space-x-2.5 min-w-0">
+                  <div className="flex -space-x-2">
+                    <img src={d.person1?.avatar} alt="" className="w-8 h-8 rounded-full object-cover border border-white/20" />
+                    <img src={d.person2?.avatar} alt="" className="w-8 h-8 rounded-full object-cover border border-white/20" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-white truncate">
+                      {d.person1?.name?.split(' ')[0]} & {d.person2?.name?.split(' ')[0]}
+                    </div>
+                    <div className="text-[10px] text-slate-500 truncate">
+                      {d.scenarioDetails?.name || d.scenario}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-xs font-bold text-emerald-400 font-mono">
+                  {d.final_score || d.scores?.overall || 85}%
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
     </div>

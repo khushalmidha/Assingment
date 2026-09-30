@@ -7,9 +7,10 @@ import ProfilesPage from './pages/ProfilesPage';
 import ProfileDetailPage from './pages/ProfileDetailPage';
 import DatingPage from './pages/DatingPage';
 import RankingsPage from './pages/RankingsPage';
+import MatrixPage from './pages/MatrixPage';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('landing'); // 'landing' | 'profiles' | 'profile-detail' | 'input' | 'dating' | 'rankings'
+  const [activeTab, setActiveTab] = useState('landing'); // 'landing' | 'profiles' | 'profile-detail' | 'input' | 'dating' | 'rankings' | 'matrix'
   const [profiles, setProfiles] = useState([]);
   const [selectedPersonId, setSelectedPersonId] = useState(null);
   const [preselectedDateId, setPreselectedDateId] = useState(null);
@@ -40,9 +41,20 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleStartDating = (personId) => {
+  const handleStartDating = (personId, partnerId) => {
     setPreselectedDateId(personId);
     setActiveTab('dating');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleWatchDate = (dateId) => {
+    setActiveTab('dating');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleNavigateToRankings = (personId) => {
+    setSelectedPersonId(personId);
+    setActiveTab('rankings');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -54,7 +66,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-midnight-950 text-slate-100 flex flex-col font-sans selection:bg-roseNeon-500 selection:text-white">
+    <div className="min-h-screen bg-[#0A0A0F] text-[#F2F2F2] flex flex-col font-sans selection:bg-[#E8472A] selection:text-white">
       
       {/* Top Navbar */}
       <Navbar
@@ -70,8 +82,8 @@ export default function App() {
       <main className="flex-1">
         {loading ? (
           <div className="max-w-7xl mx-auto px-4 py-32 text-center space-y-4">
-            <div className="w-12 h-12 border-4 border-roseNeon-500 border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-sm font-mono text-slate-400">Initializing autonomous agents and persistent memory...</p>
+            <div className="w-12 h-12 border-4 border-[#E8472A] border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-xs font-mono text-slate-400">Loading autonomous agent cohort & persistent memory...</p>
           </div>
         ) : (
           <>
@@ -100,11 +112,16 @@ export default function App() {
                 personId={selectedPersonId}
                 onBack={() => setActiveTab('profiles')}
                 onStartDating={handleStartDating}
+                onNavigateToRankings={handleNavigateToRankings}
+                onWatchDate={handleWatchDate}
               />
             )}
 
             {activeTab === 'input' && (
-              <InputPage onProfileCreated={handleProfileCreated} />
+              <InputPage 
+                onProfileCreated={handleProfileCreated}
+                onStartDating={handleStartDating}
+              />
             )}
 
             {activeTab === 'dating' && (
@@ -120,6 +137,15 @@ export default function App() {
                 profiles={profiles}
                 onSelectPerson={handleSelectPerson}
                 onStartDating={handleStartDating}
+                onWatchDate={handleWatchDate}
+              />
+            )}
+
+            {activeTab === 'matrix' && (
+              <MatrixPage
+                profiles={profiles}
+                onStartDating={handleStartDating}
+                onWatchDate={handleWatchDate}
               />
             )}
           </>
@@ -127,7 +153,10 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <Footer />
+      <Footer onNavigate={(tab) => {
+        setActiveTab(tab);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }} />
 
     </div>
   );

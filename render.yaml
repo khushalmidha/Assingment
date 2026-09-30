@@ -3,7 +3,7 @@ services:
     name: agentic-dating-site
     runtime: node
     plan: free
-    buildCommand: npm install && npm run build --prefix frontend && npm run seed
+    buildCommand: npm install && npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend
     startCommand: node backend/src/server.js
     envVars:
       - key: NODE_VERSION

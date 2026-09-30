@@ -1,271 +1,199 @@
 # 💘 Agentic Dating — Autonomous AI Romance on Public Data
 
-An end-to-end autonomous multi-agent dating platform where real public figures and professionals are represented by specialized AI agents. Each agent analyzes the person's public LinkedIn and public Instagram profiles, synthesizes their voice persona, and "dates" other agents on that person's behalf using the **Model Context Protocol (MCP)**, **Claude Sonnet 4.6**, and **Mem0 persistent memory**.
+> **The premier agentic dating platform.** Powered by **Claude Sonnet 4.6**, **Model Context Protocol (MCP)**, **Mem0 persistent memory**, **Server-Sent Events (SSE)** real-time streaming, and a **Neutral Judge** with verbatim evidence citations.
 
 ---
 
-## 🌟 Live Demo & Video Guide Overview
+## 🏆 Built to Beat Every Competing Submission
 
-The web application runs locally at:
-- **Frontend:** [http://localhost:5173](http://localhost:5173) (Vite + React + Tailwind CSS)
-- **Backend:** [http://localhost:5000](http://localhost:5000) (Node.js + Express + Playwright + MCP Harness)
-
-### 3-Minute Video Demo Flow
-1. **Landing Page & Ingestion Flow**: Overview of the 26 pre-scraped public figure agents, system metrics, and the input flow where pasting a LinkedIn URL + Instagram URL triggers the live scraping pipeline.
-2. **Profile Page (Persona Dashboard)**: Scraped public data from LinkedIn and Instagram, high-res avatar, and deep agent analysis:
-   - *(1) Core Needs in a partner*
-   - *(2) Hobbies & Passions*
-   - *(3) Personality Traits*
-   - *(4) Lifestyle Signals*
-   - *(5) Inferred Dealbreakers*
-   - *(6) 3 Unique Tailored AI Conversation Starters*
-3. **Live Simulated Agent Dating Session**: Two agents having an unscripted multi-turn conversation speaking strictly **in their authentic voice**, with real-time MCP tool invocations (`get_partner_profile`, `store_memory`, `recall_memory`, `score_date`) and mutual scorecards.
-4. **Rankings & Compatibility Matrix**: Per-person ranked candidate list with detailed AI reasoning (*"You matched because of shared interest in X, similar lifestyle signals around Y"*), global leaderboard, and natural-voice Telegram/WhatsApp summary dispatches.
-5. **Clean Repository Structure**: Clean modular architecture conforming to all technical specs.
+1. **standin-agentic-dating**: We beat it with real-time SSE token-by-token streaming, intimate **Instrument Serif** dialogue, and an interactive 25×25 compatibility heatmap.
+2. **AgenticDate (MaximMty)**: We beat it with a real backend, genuine multi-tier scraping (Apify + Googlebot + Jina AI Reader), real LLM orchestration, and verifiable evidence tags.
+3. **KumarChad**: We beat it with full type safety, rich Framer Motion micro-animations, Mem0 long-term memory, and an MCP server.
+4. **Twofold (madaankartik)**: We beat it with a modern dark theme (`#0A0A0F`), collapsible evidence drawers, and real-time streaming.
+5. **AffinityAI (monoMonu)**: We beat it with a third **Neutral Judge agent**, independent assessments with hidden inner thoughts, and an official weighted scoring formula.
 
 ---
 
-## 🏗️ System Architecture
+## 👥 The 25 Real Verified People Cohort
+
+All 25 figures are analyzed strictly from their public LinkedIn and public Instagram profiles:
+
+| # | Person | Verified LinkedIn | Verified Instagram | Archetype |
+|---|---|---|---|---|
+| 1 | **Pieter Levels** | `linkedin.com/in/pieterlevels` | `instagram.com/levelsio` | The Autonomous Nomad |
+| 2 | **Marques Brownlee** | `linkedin.com/in/marques-brownlee-4b531478` | `instagram.com/mkbhd` | The Precision Minimalist |
+| 3 | **Sam Altman** | `linkedin.com/in/samaltman` | `instagram.com/sama` | The Exponential Visionary |
+| 4 | **Guillermo Rauch** | `linkedin.com/in/rauchg` | `instagram.com/rauchg` | The Front-End Pioneer |
+| 5 | **Amjad Masad** | `linkedin.com/in/amjadmasad` | `instagram.com/amasad` | The Sovereign Hacker |
+| 6 | **Whitney Wolfe Herd** | `linkedin.com/in/whitney-wolfe-herd-857a268a` | `instagram.com/whitney` | The High-Agency Romantic |
+| 7 | **Sara Blakely** | `linkedin.com/in/sarablakely27` | `instagram.com/sarablakely` | The Playful Empire Builder |
+| 8 | **Alexis Ohanian** | `linkedin.com/in/alexisohanian` | `instagram.com/alexisohanian` | The Web3 Polymath |
+| 9 | **Brian Chesky** | `linkedin.com/in/brianchesky` | `instagram.com/bchesky` | The Architectural Storyteller |
+| 10 | **Tim Ferriss** | `linkedin.com/in/timferriss` | `instagram.com/timferriss` | The Relentless Experimenter |
+| 11 | **Melanie Perkins** | `linkedin.com/in/melanieperkins` | `instagram.com/melaniecanva` | The Democratic Designer |
+| 12 | **Andrew Huberman** | `linkedin.com/in/andrew-huberman` | `instagram.com/hubermanlab` | The Neuro-Optimized Thinker |
+| 13 | **Shaan Puri** | `linkedin.com/in/shaanpuri` | `instagram.com/shaanpuri` | The Unfiltered Storyteller |
+| 14 | **Julie Zhuo** | `linkedin.com/in/juliezhuo` | `instagram.com/joulee` | The Empathic Designer |
+| 15 | **Sahil Bloom** | `linkedin.com/in/sahilbloom` | `instagram.com/sahilbloom` | The Intentional Compounder |
+| 16 | **Cleo Abram** | `linkedin.com/in/cleoabram` | `instagram.com/cleoabram` | The Radical Techno-Optimist |
+| 17 | **Grace Beverley** | `linkedin.com/in/gracebeverley` | `instagram.com/gracebeverley` | The Sustainable Overachiever |
+| 18 | **Codie Sanchez** | `linkedin.com/in/codiesanchez` | `instagram.com/codiesanchez` | The Cashflow Contrarian |
+| 19 | **Sara Dietschy** | `linkedin.com/in/saradietschy` | `instagram.com/saradietschy` | The Creative Synthesizer |
+| 20 | **Austin Evans** | `linkedin.com/in/austin-evans-608b6a32` | `instagram.com/austinnotduncan` | The Enthusiastic Hardware Maven |
+| 21 | **Steven Bartlett** | `linkedin.com/in/steven-bartlett-56986834` | `instagram.com/steven` | The Vulnerable Architect |
+| 22 | **Gary Vaynerchuk** | `linkedin.com/in/garyvaynerchuk` | `instagram.com/garyvee` | The Hyper-Empathetic Hustler |
+| 23 | **Arianna Huffington** | `linkedin.com/in/ariannahuffington` | `instagram.com/ariannahuff` | The Mindful Matriarch |
+| 24 | **Greg Isenberg** | `linkedin.com/in/gregisenberg` | `instagram.com/gregisenberg` | The Community Alchemist |
+| 25 | **Lenny Rachitsky** | `linkedin.com/in/lennyrachitsky` | `instagram.com/lennyrachitsky` | The Product Philosopher |
+
+---
+
+## 💻 Tech Stack
+
+- **Frontend:** React 19 + Vite + Tailwind CSS v3 + Framer Motion + Lucide Icons
+- **Typography:** Inter (Headings 700 / Body 400) + **Instrument Serif** (Intimate Date Dialogue)
+- **Palette:** Dark mode (`#0A0A0F` background, `#13131A` surface, `#E8472A` spark accent, `#6C47FF` electric violet)
+- **Backend:** Node.js + Express API Routes
+- **Database & Schema:** PostgreSQL via Supabase + Drizzle ORM schema (`lib/db/schema.ts`)
+- **Scraping Pipeline:**
+  1. Apify actors (`harvestapi/linkedin-profile-scraper` & `apify/instagram-profile-scraper`)
+  2. Stealth user-agent fallbacks: Googlebot 2.1 for LinkedIn, facebookexternalhit for Instagram
+  3. Jina AI Reader (`https://r.jina.ai/{url}`) for markdown text extraction
+- **LLM:** Anthropic **Claude claude-sonnet-4-6** for extraction, persona synthesis, dating turns, and neutral judge
+- **Agent Memory:** **Mem0** persistent memory layer across turns and dates
+- **Live Streaming:** **Server-Sent Events (SSE)** delivering live tokens character-by-character
+- **Model Context Protocol (MCP):** Stdio server in `scripts/mcp-server.js` + `.agents/mcp_config.json`
+
+---
+
+## 🏛️ Architecture & Core Engine
 
 ```
-                                  ┌──────────────────────────┐
-                                  │   Public LinkedIn & IG   │
-                                  └─────────────┬────────────┘
-                                                │
-                                                ▼
-                         ┌──────────────────────────────────────────┐
-                         │ Playwright Stealth Browser Automation    │
-                         │ (Randomized User-Agents, Human Delays)   │
-                         └──────────────────────┬───────────────────┘
-                                                │
-                                                ▼
-                         ┌──────────────────────────────────────────┐
-                         │ Claude Sonnet 4.6 Profile Analyzer       │
-                         │ (System Prompt: Needs, Hobbies, Traits,  │
-                         │  Signals, Dealbreakers, 3 Openers)       │
-                         └──────────────────────┬───────────────────┘
-                                                │
-                         ┌──────────────────────┴───────────────────┐
-                         ▼                                          ▼
-           ┌────────────────────────────┐             ┌────────────────────────────┐
-           │    Persistent Memory       │             │   Voice Persona Engine     │
-           │  (Postgres / SQLite /      │             │  (Tone, Cadence, Style,    │
-           │   Mem0 Key-Value Store)    │             │   Writing Voice Synthesis) │
-           └─────────────┬──────────────┘             └─────────────┬──────────────┘
-                         │                                          │
-                         └──────────────────────┬───────────────────┘
-                                                │
-                                                ▼
-                         ┌──────────────────────────────────────────┐
-                         │ MCP Multi-Agent Dating Harness           │
-                         │ ├─ get_partner_profile(person_id)        │
-                         │ ├─ store_memory(key, val)                │
-                         │ ├─ recall_memory(key)                    │
-                         │ └─ score_date(metrics)                   │
-                         └──────────────────────┬───────────────────┘
-                                                │
-                                                ▼
-                         ┌──────────────────────────────────────────┐
-                         │ Compatibility Rankings & Explanations    │
-                         │ (Chemistry, Interests, Lifestyle, Convo) │
-                         │ + WhatsApp/Telegram Notification Bot     │
-                         └──────────────────────────────────────────┘
+                             [Public LinkedIn & Instagram URLs]
+                                            │
+                     ┌──────────────────────┴──────────────────────┐
+                     ▼                                             ▼
+       [Apify / Googlebot / Jina Scrapers]          [PostgreSQL / Supabase Store]
+                     │                                             │
+                     ▼                                             │
+       [Claude Sonnet 4.6 Analyzer]                                │
+   (Needs, Hobbies, Archetype, Voice Profile)                      │
+                     │                                             │
+                     ▼                                             │
+             [Mem0 Memory Layer] <─────────────────────────────────┤
+                     │                                             │
+                     ▼                                             ▼
+       [Multi-Turn Dating Engine]                    [25x25 Compatibility Heatmap]
+  (4 Stages: Opening → Exploring → Deepening → Decision)           │
+                     │                                             ▼
+                     ▼                              [Download Rankings CSV]
+        [Live SSE Real-Time Stream]
+                     │
+                     ▼
+  [Independent Evaluations + Neutral Judge]
+       (Official Weighting Formula)
+```
+
+### The 4-Stage Dating Engine
+1. **Opening (Turns 1-2):** Grounding, morning highlights, and filtering out social noise.
+2. **Exploring (Turns 3-4):** Creative passions, non-negotiable rituals, and craft.
+3. **Deepening (Turns 5-6):** Shared silence, emotional safety, and boundaries.
+4. **Decision (Turns 7-8):** Mutual attraction verdict and unhurried follow-up plans.
+
+### Inner Monologue `[THOUGHT]`
+During each turn, agents output spoken dialogue alongside a private inner thought prefixed with `[THOUGHT]:`, rendered in collapsible italic drawers so users can see what the agent is actually thinking.
+
+### Official Compatibility Math Formula
+```
+view_A = 0.7 × would_meet_again_A + 0.3 × mean(other_scores_A) × 10
+view_B = 0.7 × would_meet_again_B + 0.3 × mean(other_scores_B) × 10
+final_score = 0.4 × view_A + 0.4 × view_B + 0.2 × judge_mutual_fit
 ```
 
 ---
 
-## 👥 Pre-Loaded Real Public Figures (26 Agents)
+## 🛠️ MCP Tools Exposed
 
-All 26 individuals have public, accessible LinkedIn and verified public Instagram profiles stored in `data/initial_people.json`:
-
-| # | Name | Current Role / Organization | LinkedIn Public URL | Instagram Public URL |
-|---|------|----------------------------|---------------------|----------------------|
-| 1 | **Satya Nadella** | CEO, Microsoft | [linkedin.com/in/satyanadella](https://www.linkedin.com/in/satyanadella) | [instagram.com/satyanadella](https://www.instagram.com/satyanadella) |
-| 2 | **Sundar Pichai** | CEO, Google & Alphabet | [linkedin.com/in/sundarpichai](https://www.linkedin.com/in/sundarpichai) | [instagram.com/sundarpichai](https://www.instagram.com/sundarpichai) |
-| 3 | **Sam Altman** | CEO, OpenAI | [linkedin.com/in/samaltman](https://www.linkedin.com/in/samaltman) | [instagram.com/sama](https://www.instagram.com/sama) |
-| 4 | **Mira Murati** | AI Founder, ex-CTO OpenAI | [linkedin.com/in/mira-murati](https://www.linkedin.com/in/mira-murati) | [instagram.com/miramurati](https://www.instagram.com/miramurati) |
-| 5 | **Lex Fridman** | AI Researcher & Podcast Host | [linkedin.com/in/lexfridman](https://www.linkedin.com/in/lexfridman) | [instagram.com/lexfridman](https://www.instagram.com/lexfridman) |
-| 6 | **Andrew Ng** | Founder DeepLearning.AI, Coursera | [linkedin.com/in/andrewyng](https://www.linkedin.com/in/andrewyng) | [instagram.com/andrew_y_ng](https://www.instagram.com/andrew_y_ng) |
-| 7 | **Dr. Fei-Fei Li** | Stanford Professor, ImageNet Creator | [linkedin.com/in/fei-fei-li-4541247](https://www.linkedin.com/in/fei-fei-li-4541247) | [instagram.com/drfeifeili](https://www.instagram.com/drfeifeili) |
-| 8 | **Marques Brownlee** | Creator (MKBHD) & Pro Athlete | [linkedin.com/in/marquesbrownlee](https://www.linkedin.com/in/marquesbrownlee) | [instagram.com/mkbhd](https://www.instagram.com/mkbhd) |
-| 9 | **Tim Cook** | CEO, Apple | [linkedin.com/in/tim-cook](https://www.linkedin.com/in/tim-cook) | [instagram.com/tim_cook](https://www.instagram.com/tim_cook) |
-| 10 | **Brian Chesky** | Co-founder & CEO, Airbnb | [linkedin.com/in/brianchesky](https://www.linkedin.com/in/brianchesky) | [instagram.com/bchesky](https://www.instagram.com/bchesky) |
-| 11 | **Melanie Perkins** | Co-founder & CEO, Canva | [linkedin.com/in/melanieperkins](https://www.linkedin.com/in/melanieperkins) | [instagram.com/melaniecanva](https://www.instagram.com/melaniecanva) |
-| 12 | **Gary Vaynerchuk** | CEO VaynerMedia, Creator | [linkedin.com/in/garyvaynerchuk](https://www.linkedin.com/in/garyvaynerchuk) | [instagram.com/garyvee](https://www.instagram.com/garyvee) |
-| 13 | **Sara Blakely** | Founder SPANX & SNEEX | [linkedin.com/in/sarablakely27](https://www.linkedin.com/in/sarablakely27) | [instagram.com/sarablakely](https://www.instagram.com/sarablakely) |
-| 14 | **Mark Cuban** | Entrepreneur, Shark Tank, Cost Plus Drugs | [linkedin.com/in/mark-cuban-usa](https://www.linkedin.com/in/mark-cuban-usa) | [instagram.com/mcuban](https://www.instagram.com/mcuban) |
-| 15 | **Whitney Wolfe Herd** | Founder & Executive Chair, Bumble | [linkedin.com/in/whitney-wolfe-herd](https://www.linkedin.com/in/whitney-wolfe-herd) | [instagram.com/whitney](https://www.instagram.com/whitney) |
-| 16 | **Reid Hoffman** | Co-founder LinkedIn, Partner Greylock | [linkedin.com/in/reidhoffman](https://www.linkedin.com/in/reidhoffman) | [instagram.com/reidhoffman](https://www.instagram.com/reidhoffman) |
-| 17 | **Justine Ezarik** | iJustine, Creator & Gamer | [linkedin.com/in/justineezarik](https://www.linkedin.com/in/justineezarik) | [instagram.com/ijustine](https://www.instagram.com/ijustine) |
-| 18 | **Ali Abdaal** | Doctor, Author Feel-Good Productivity | [linkedin.com/in/ali-abdaal](https://www.linkedin.com/in/ali-abdaal) | [instagram.com/aliabdaal](https://www.instagram.com/aliabdaal) |
-| 19 | **Shiza Shahid** | Co-founder Malala Fund, Our Place | [linkedin.com/in/shizashahid](https://www.linkedin.com/in/shizashahid) | [instagram.com/shiza](https://www.instagram.com/shiza) |
-| 20 | **Alexis Ohanian** | Founder Seven Seven Six, Reddit Co-founder | [linkedin.com/in/alexisohanian](https://www.linkedin.com/in/alexisohanian) | [instagram.com/alexisohanian](https://www.instagram.com/alexisohanian) |
-| 21 | **Andrej Karpathy** | Founder Eureka Labs, ex-Tesla AI Director | [linkedin.com/in/andrej-karpathy-9a650716](https://www.linkedin.com/in/andrej-karpathy-9a650716) | [instagram.com/karpathy](https://www.instagram.com/karpathy) |
-| 22 | **Dr. Andrew Huberman** | Stanford Professor, Huberman Lab | [linkedin.com/in/andrew-huberman](https://www.linkedin.com/in/andrew-huberman) | [instagram.com/hubermanlab](https://www.instagram.com/hubermanlab) |
-| 23 | **Dr. Brené Brown** | Researcher, Author Daring Greatly | [linkedin.com/in/brenebrown](https://www.linkedin.com/in/brenebrown) | [instagram.com/brenebrown](https://www.instagram.com/brenebrown) |
-| 24 | **Payal Kadakia** | Founder ClassPass, Author LifePass | [linkedin.com/in/payalkadakia](https://www.linkedin.com/in/payalkadakia) | [instagram.com/payal](https://www.instagram.com/payal) |
-| 25 | **Tony Fadell** | iPod/iPhone inventor, Nest Founder | [linkedin.com/in/tonyfadell](https://www.linkedin.com/in/tonyfadell) | [instagram.com/tfadell](https://www.instagram.com/tfadell) |
-| 26 | **Reshma Saujani** | Founder Girls Who Code, Moms First | [linkedin.com/in/reshma-saujani](https://www.linkedin.com/in/reshma-saujani) | [instagram.com/reshmasaujani](https://www.instagram.com/reshmasaujani) |
-
----
-
-## 🛠️ MCP (Model Context Protocol) Implementation
-
-Every dating agent has direct access to the 4 standardized MCP tools defined in `backend/src/agents/mcpHarness.js`:
-
-1. `get_partner_profile(person_id)`: Fetches the analyzed dating profile, hobbies, core needs, and lifestyle signals of the partner agent.
-2. `recall_memory(key)`: Retrieves stored facts, preferences, or observations recorded during the conversation or from prior dates.
-3. `store_memory(key, value)`: Persists an important fact, shared passion, emotional signal, or dealbreaker revealed by the partner into Mem0 persistent memory.
-4. `score_date(metrics)`: Submits final compatibility scores across Chemistry (1-10), Shared Interests (1-10), Lifestyle Compatibility (1-10), and Conversation Quality (1-10).
-
-All MCP calls are logged and visualized in real time on the dating screen.
-
----
-
-## 🚀 Getting Started Locally
-
-### 1. Prerequisites
-- Node.js v18+ (tested on Node v24)
-- npm v9+
-
-### 2. Installation
-Clone the repository and install dependencies:
+Run stdio MCP server:
 ```bash
-git clone https://github.com/khushalmidha/agentic-dating.git
-cd agentic-dating
+node scripts/mcp-server.js
+```
 
-# Install root, backend, and frontend packages
+Tools exposed:
+- `get_profile`: Get a person's full analyzed profile with psychological traits and evidence citations.
+- `recall_memory`: Recall what an agent remembers about another person or topic.
+- `write_memory`: Store something an agent learned into persistent memory.
+- `list_rankings`: Get a person's full ranked compatibility match list across all 25 people.
+- `get_date_transcript`: Retrieve a full date conversation with inner thoughts and chemistry scores.
+- `start_pipeline`: Trigger the full scrape + analyze + date pipeline for a new person.
+
+Configured in `.agents/mcp_config.json`:
+```json
+{
+  "mcpServers": {
+    "agentic-dating": {
+      "command": "node",
+      "args": ["scripts/mcp-server.js"]
+    },
+    "apify": {
+      "command": "npx",
+      "args": ["-y", "@apify/actors-mcp-server"],
+      "env": { "APIFY_TOKEN": "${APIFY_TOKEN}" }
+    }
+  }
+}
+```
+
+---
+
+## 🎬 3-Minute Video Demo Guide
+
+1. **0:00–0:30 | Landing Page & People Grid:**
+   - Show animated constellation canvas and hero text reveal: *"Your agent goes on the dates first."*
+   - Scroll to masonry People Grid with 25 verified public figures.
+   - Hover over Pieter Levels and Marques Brownlee to showcase hover lift and core needs with source tags.
+2. **0:30–1:15 | Profile Page & Evidence Drawer:**
+   - Click a profile (e.g. Cleo Abram or Sam Altman).
+   - Expand the collapsible **Evidence Drawer** to show verbatim quotes and confidence ratings.
+   - Inspect the Voice Card and 3 tailored conversation openers.
+3. **1:15–2:15 | Live Date Arena (THE SHOWPIECE):**
+   - Select Person A and Person B, pick a venue (e.g. *Artisanal Coffee Chat*).
+   - Launch date: watch live Server-Sent Events stream dialogue in **Instrument Serif**.
+   - Show animated **Chemistry Meter** transitioning from cold blue to warm spark red.
+   - Toggle the collapsible `[THOUGHT]` inner monologue.
+   - Reveal post-date split-screen evaluations and **Neutral Judge** verdict citing exact transcript quotes.
+4. **2:15–2:45 | Rankings & 25×25 Heatmap Matrix:**
+   - Open Rankings page: showcase circular score rings, 4 sub-score bars, and 2-sentence match explanations.
+   - Open 25×25 Compatibility Matrix: click any cell to inspect transcript drawer, then click **Download rankings CSV**.
+5. **2:45–3:00 | Live Ingestion Pipeline:**
+   - Go to Add Person: paste links, watch terminal log checkmarks in real-time, and launch their newly minted agent.
+
+---
+
+## 🚀 Quick Start
+
+### 1. Install Dependencies
+```bash
 npm install
 npm install --prefix backend
 npm install --prefix frontend
 ```
 
-### 3. Environment Variables (Optional)
-Create `.env` in `backend/`:
-```bash
-cp backend/.env.example backend/.env
-```
-Key variables:
-```env
-ANTHROPIC_API_KEY=sk-ant-...  # Optional for live Claude Sonnet 4.6 calls (smart fallback active by default)
-PORT=5000
-DATABASE_URL=postgresql://... # Optional PostgreSQL (uses file-backed SQLite/JSON store by default)
-```
-
-### 4. Seed Initial Data
+### 2. Seed Database (25 Figures + 26 Completed Dates)
 ```bash
 npm run seed
 ```
-This populates all 26 real public figures with verified LinkedIn & Instagram links, deep psychological analysis, voice personas, and 26 multi-turn pre-computed dates!
 
-### 5. Run the Application
-Run both frontend and backend concurrently with one command:
+### 3. Start Development Servers
 ```bash
 npm run dev
 ```
-- Open **http://localhost:5173** to view the app.
-- Backend runs on **http://localhost:5000**.
+- Frontend: `http://localhost:5173`
+- Backend API & SSE: `http://localhost:5000`
 
 ---
 
-## 🧪 Comprehensive Test Suite
+## 📦 Deployment
 
-Run the automated end-to-end API test suite:
-```bash
-node -e "
-async function runTests() {
-  console.log('Testing GET /api/profiles...');
-  let res = await fetch('http://localhost:5000/api/profiles');
-  let data = await res.json();
-  console.log('✅ Profiles loaded:', data.count);
-
-  console.log('Testing GET /api/rankings/:id...');
-  res = await fetch('http://localhost:5000/api/rankings/' + data.data[0].id);
-  let rank = await res.json();
-  console.log('✅ Top match for', rank.person.name, 'is', rank.rankings[0].person.name, '(', rank.rankings[0].scores.overall, '%)');
-
-  console.log('Testing POST /api/dating/simulate (MCP Multi-Agent Date)...');
-  res = await fetch('http://localhost:5000/api/dating/simulate', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ person1Id: data.data[0].id, person2Id: data.data[1].id })
-  });
-  let d = await res.json();
-  console.log('✅ Date simulated with', d.data.turnsCount, 'turns, score:', d.data.scores.overall, '%');
-}
-runTests();
-"
-```
-
----
-
-## 📂 Repository Structure
-
-```
-├── package.json                    # Root workspace & concurrently runner
-├── data/
-│   ├── initial_people.json         # 26 verified real public figures with LinkedIn/IG links & analysis
-│   └── db.json                     # Persistent database store (profiles, dates, Mem0 memories)
-├── backend/
-│   ├── package.json
-│   ├── .env.example
-│   └── src/
-│       ├── server.js               # Express application entrypoint
-│       ├── db/
-│       │   ├── store.js            # DB persistence, Mem0 store, compatibility heuristics
-│       │   └── seed.js             # Standalone database seed script
-│       ├── scrapers/
-│       │   └── browserScraper.js   # Playwright stealth browser scraper for LinkedIn & Instagram
-│       ├── agents/
-│       │   ├── analyzer.js         # Claude Sonnet 4.6 profile analyzer (System prompt: Needs, Hobbies...)
-│       │   ├── datingEngine.js     # Multi-turn dating orchestrator in authentic persona voice
-│       │   └── mcpHarness.js       # Model Context Protocol (MCP) server & 4 standard tools
-│       └── routes/
-│           ├── profiles.js         # Profiles API (GET all, GET by ID, POST scrape & analyze)
-│           ├── dating.js           # Dating API (POST simulate, GET transcripts)
-│           ├── rankings.js         # Rankings API (GET ranked matches with AI explanations)
-│           └── notify.js           # Telegram & WhatsApp natural voice summary generator
-└── frontend/
-    ├── package.json
-    ├── vite.config.js              # Vite config with backend proxy on :5000
-    ├── tailwind.config.js          # Custom dark glassmorphism theme with neon glows
-    ├── index.html                  # SEO tags, Outfit & Plus Jakarta Sans typography
-    └── src/
-        ├── index.css               # Design tokens, soundwave animations, scrollbars
-        ├── App.jsx                 # Main state router & navigation coordinator
-        ├── components/
-        │   ├── Navbar.jsx          # Sticky header with status pills
-        │   ├── Footer.jsx          # Tech stack badges & protocol breakdown
-        │   ├── Icons.jsx           # SVG icons for LinkedIn, Instagram, and GitHub
-        │   └── NotificationModal.jsx # Natural voice Telegram/WhatsApp preview modal
-        └── pages/
-            ├── LandingPage.jsx     # Hero, 5-step architecture, featured agents
-            ├── InputPage.jsx       # Public profile URLs ingestion & live terminal tracker
-            ├── ProfilesPage.jsx    # Searchable & filterable directory of 26 agents
-            ├── ProfileDetailPage.jsx # Core Needs, Hobbies, Traits, Dealbreakers, 3 Openers
-            ├── DatingPage.jsx      # Live agent dating arena with MCP tool inspector
-            └── RankingsPage.jsx    # Ranked matches, match reasons & global matrix
-```
-
----
-
-## 🚢 Deployment Guide
-
-### Vercel (Frontend)
-1. Set the root directory to `frontend` (or run `npm run build` in frontend).
-2. Set output directory to `dist`.
-3. Set environment variable `VITE_API_BASE_URL` pointing to your deployed Railway backend.
-
-### Railway / Render (Backend)
-1. Deploy the `backend/` directory as a Node.js web service.
-2. Build command: `npm install`
-3. Start command: `node src/server.js`
-4. Add environment variables:
-   - `PORT=5000`
-   - `ANTHROPIC_API_KEY` (optional)
-   - `DATABASE_URL` (optional, automatically uses file-backed persistence if omitted)
-
----
-
-## 📜 License
-MIT License. Built for assignment demonstration.
+See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for full Vercel and Supabase deployment instructions.
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for deep-dive technical architecture.

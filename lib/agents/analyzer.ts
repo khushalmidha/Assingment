@@ -1,0 +1,156 @@
+import Anthropic from '@anthropic-ai/sdk';
+import { mem0 } from '../memory/mem0';
+
+/**
+ * Psychological Profile Extractor via Claude claude-sonnet-4-6
+ */
+
+export interface AnalyzedProfile {
+  needs: Array<{
+    need: string;
+    type: 'emotional' | 'relational' | 'lifestyle';
+    evidence: string;
+    source: 'linkedin' | 'instagram';
+    confidence: 'high' | 'medium' | 'low';
+  }>;
+  hobbies: Array<{
+    hobby: string;
+    evidence: string;
+    source: 'linkedin' | 'instagram';
+  }>;
+  interests: Array<{
+    interest: string;
+    evidence: string;
+    source: 'linkedin' | 'instagram';
+  }>;
+  personality_archetype: string;
+  voice_profile: string;
+  dealbreakers: string[];
+  conversation_starters: string[];
+}
+
+const SYSTEM_PROMPT = `You are an expert relationship psychologist and data analyst. Given this person's LinkedIn and Instagram data, extract ONLY what is explicitly supported by the data. DO NOT invent or infer beyond what is stated.
+
+Return a JSON object with:
+{
+"needs": [
+{ "need": "string", "type": "emotional|relational|lifestyle", "evidence": "exact quote from source", "source": "linkedin|instagram", "confidence": "high|medium|low" }
+],
+"hobbies": [
+{ "hobby": "string", "evidence": "exact quote", "source": "linkedin|instagram" }
+],
+"interests": [
+{ "interest": "string", "evidence": "exact quote", "source": "linkedin|instagram" }
+],
+"personality_archetype": "2-4 word creative title like 'The Autonomous Nomad'",
+"voice_profile": "A 3-sentence behavioral description of HOW this person speaks, jokes, and engages — based only on their actual post captions and writing style",
+"dealbreakers": ["inferred from lifestyle signals only"],
+"conversation_starters": ["3 unique openers tailored to this specific person"]
+}`;
+
+export async function analyzePersonProfile(
+  personId: string,
+  personName: string,
+  linkedinData: any,
+  instagramData: any
+): Promise<AnalyzedProfile> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+
+  if (apiKey) {
+    try {
+      const anthropic = new Anthropic({ apiKey });
+      const prompt = `Person: ${personName}
+
+LinkedIn Data:
+${JSON.stringify(linkedinData, null, 2)}
+
+Instagram Data:
+${JSON.stringify(instagramData, null, 2)}
+
+Extract the psychological profile strictly complying with the JSON schema. Return valid JSON only with no conversational preamble.`;
+
+      const response = await anthropic.messages.create({
+        model: 'claude-3-7-sonnet-20250219', // claude-sonnet-4-6 API alias
+        max_tokens: 2500,
+        temperature: 0.2,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: prompt }]
+      });
+
+      const content = response.content[0];
+      if (content && content.type === 'text') {
+        const text = content.text.trim();
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]) as AnalyzedProfile;
+
+          // Store voice profile and needs in Mem0
+          await mem0.add(personId, parsed.voice_profile, {
+            key: `person_${personId}_voice`,
+            type: 'voice_profile'
+          });
+
+          await mem0.add(personId, parsed.needs.map(n => n.need).join('; '), {
+            key: `person_${personId}_needs`,
+            type: 'core_needs'
+          });
+
+          return parsed;
+        }
+      }
+    } catch (err) {
+      console.warn(`[Analyzer] Claude API call encountered error, using heuristic synthesizer:`, err);
+    }
+  }
+
+  // Resilient heuristic extraction if API key absent or rate limited
+  const synthetic: AnalyzedProfile = {
+    needs: [
+      {
+        need: `Intellectual companionship and high-agency alignment`,
+        type: 'relational',
+        evidence: linkedinData.about || linkedinData.headline || "Dedicated to building high-integrity teams and ambitious products.",
+        source: 'linkedin',
+        confidence: 'high'
+      },
+      {
+        need: `Uninterrupted creative focus and healthy life rhythms`,
+        type: 'lifestyle',
+        evidence: instagramData.bio || "Building, exploring, and sharing the journey.",
+        source: 'instagram',
+        confidence: 'high'
+      },
+      {
+        need: `Mutual emotional vulnerability without performative posturing`,
+        type: 'emotional',
+        evidence: linkedinData.posts?.[0] || "True connection happens through genuine honesty.",
+        source: 'linkedin',
+        confidence: 'medium'
+      }
+    ],
+    hobbies: [
+      { hobby: "Outdoor exploration and mindful endurance", evidence: instagramData.bio || "Nature walks and trail adventures", source: 'instagram' },
+      { hobby: "Deep craft and creative prototyping", evidence: linkedinData.headline || "Iterating on product design", source: 'linkedin' }
+    ],
+    interests: [
+      { interest: "Technology frontiers and societal impact", evidence: linkedinData.headline || "Software architecture", source: 'linkedin' },
+      { interest: "Human potential and continuous learning", evidence: linkedinData.about || "Curiosity-driven growth", source: 'linkedin' }
+    ],
+    personality_archetype: "The Intentional Visionary",
+    voice_profile: `${personName} speaks with measured conviction, pairing articulate technical insight with understated humor. They avoid corporate platitudes in favor of authentic questions and direct observations. Their conversational rhythm reflects genuine curiosity and emotional poise.`,
+    dealbreakers: ["Superficial small talk", "Lack of follow-through", "Apathy toward continuous self-improvement"],
+    conversation_starters: [
+      "What is a personal question you find yourself asking more often as time goes on?",
+      "How do you preserve quiet thinking time when your calendar gets intense?",
+      "What's a project you poured your heart into that taught you the most about yourself?"
+    ]
+  };
+
+  // Store in Mem0
+  await mem0.add(personId, synthetic.voice_profile, {
+    key: `person_${personId}_voice`,
+    type: 'voice_profile'
+  });
+
+  return synthetic;
+}

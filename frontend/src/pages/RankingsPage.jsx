@@ -1,14 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Trophy, Flame, Sparkles, Radio, ArrowRight, Send, Layers, Filter } from 'lucide-react';
-import NotificationModal from '../components/NotificationModal';
+import React, { useState, useEffect, useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { Trophy, Radio, ArrowRight, Play, Filter, Sparkles, Heart } from 'lucide-react';
 
-export default function RankingsPage({ profiles, onSelectPerson, onStartDating }) {
+export default function RankingsPage({ profiles, onSelectPerson, onStartDating, onWatchDate }) {
   const [selectedPersonId, setSelectedPersonId] = useState(profiles[0]?.id || '');
-  const [rankingsData, setRankingsData] = useState(null);
-  const [globalLeaderboard, setGlobalLeaderboard] = useState([]);
+  const [rankingsData, setRankingsData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState('individual'); // 'individual' | 'global'
-  const [showNotifyModal, setShowNotifyModal] = useState(false);
+  const [sortBy, setSortBy] = useState('score'); // 'score' | 'chemistry' | 'values' | 'lifestyle'
 
   // Sync initial selection
   useEffect(() => {
@@ -17,7 +15,7 @@ export default function RankingsPage({ profiles, onSelectPerson, onStartDating }
     }
   }, [profiles, selectedPersonId]);
 
-  // Fetch individual rankings for selected person
+  // Fetch rankings for selected person
   useEffect(() => {
     async function fetchRankings() {
       if (!selectedPersonId) return;
@@ -25,8 +23,8 @@ export default function RankingsPage({ profiles, onSelectPerson, onStartDating }
       try {
         const res = await fetch(`/api/rankings/${selectedPersonId}`);
         const json = await res.json();
-        if (json.success) {
-          setRankingsData(json);
+        if (json.success && json.rankings) {
+          setRankingsData(json.rankings);
         }
       } catch (err) {
         console.error('Error fetching rankings:', err);
@@ -37,302 +35,279 @@ export default function RankingsPage({ profiles, onSelectPerson, onStartDating }
     fetchRankings();
   }, [selectedPersonId]);
 
-  // Fetch global leaderboard
-  useEffect(() => {
-    async function fetchGlobal() {
-      try {
-        const res = await fetch('/api/rankings');
-        const json = await res.json();
-        if (json.success && json.leaderboard) {
-          setGlobalLeaderboard(json.leaderboard);
-        }
-      } catch (err) {
-        console.error('Error fetching global leaderboard:', err);
-      }
-    }
-    fetchGlobal();
-  }, []);
+  const currentPerson = profiles.find(p => p.id === selectedPersonId) || profiles[0];
 
-  const currentPerson = profiles.find(p => p.id === selectedPersonId);
+  // Sorting by chosen dimension
+  const sortedRankings = useMemo(() => {
+    const list = [...rankingsData];
+    if (sortBy === 'chemistry') {
+      list.sort((a, b) => (b.score_breakdown?.chemistry || b.scores?.chemistry || 0) - (a.score_breakdown?.chemistry || a.scores?.chemistry || 0));
+    } else if (sortBy === 'values') {
+      list.sort((a, b) => (b.score_breakdown?.valuesAlignment || b.scores?.sharedInterests || 0) - (a.score_breakdown?.valuesAlignment || a.scores?.sharedInterests || 0));
+    } else if (sortBy === 'lifestyle') {
+      list.sort((a, b) => (b.score_breakdown?.lifestyleFit || b.scores?.lifestyle || 0) - (a.score_breakdown?.lifestyleFit || a.scores?.lifestyle || 0));
+    } else {
+      list.sort((a, b) => (b.score || b.scores?.overall || 0) - (a.score || a.scores?.overall || 0));
+    }
+    return list;
+  }, [rankingsData, sortBy]);
+
+  // Circular Score Ring Component
+  const ScoreRing = ({ score }) => {
+    const radius = 24;
+    const circumference = 2 * Math.PI * radius;
+    const strokeDashoffset = circumference - (score / 100) * circumference;
+
+    return (
+      <div className="relative w-16 h-16 flex items-center justify-center flex-shrink-0">
+        <svg className="w-16 h-16 transform -rotate-90">
+          <circle
+            cx="32"
+            cy="32"
+            r={radius}
+            stroke="currentColor"
+            strokeWidth="4"
+            className="text-white/10"
+            fill="transparent"
+          />
+          <circle
+            cx="32"
+            cy="32"
+            r={radius}
+            stroke="currentColor"
+            strokeWidth="4"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            className={score >= 88 ? 'text-[#E8472A]' : score >= 78 ? 'text-[#6C47FF]' : 'text-sky-400'}
+            fill="transparent"
+          />
+        </svg>
+        <span className="absolute font-mono font-black text-sm text-white">{score}%</span>
+      </div>
+    );
+  };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fade-in">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 animate-fade-in">
       
-      {/* Title & View Switcher */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-xs font-mono text-amber-300">
-            <Trophy className="w-3.5 h-3.5 text-amber-400" />
-            <span>Step 5 • Compatibility Rankings & Explanations</span>
+      {/* Title & Target Person Selector */}
+      <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-white/10 space-y-6">
+        
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-5">
+          <div>
+            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-[#E8472A]/10 border border-[#E8472A]/20 text-xs font-mono text-[#E8472A]">
+              <Trophy className="w-3.5 h-3.5" />
+              <span>Ranked Compatibility Matches</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white mt-1">
+              Compatibility Match Rankings
+            </h1>
           </div>
-          <h1 className="text-3xl font-display font-extrabold text-white mt-2">
-            AI Compatibility Rankings
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Aggregated scores across all dates with detailed AI reasoning explaining why pairs match or clash.
-          </p>
+
+          {/* Person Selector Dropdown */}
+          <div className="flex items-center space-x-2">
+            <span className="text-xs font-mono text-slate-400">Target Agent:</span>
+            <select
+              value={selectedPersonId}
+              onChange={(e) => setSelectedPersonId(e.target.value)}
+              className="bg-[#0A0A0F] border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-[#E8472A]"
+            >
+              {profiles.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        {/* View Toggle */}
-        <div className="flex items-center glass-pill p-1.5 rounded-full space-x-1">
-          <button
-            onClick={() => setActiveView('individual')}
-            className={`px-4 py-2 rounded-full text-xs font-semibold transition ${
-              activeView === 'individual'
-                ? 'bg-gradient-to-r from-roseNeon-500 to-violetNeon-500 text-white shadow-glow-rose'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Per-Person Rankings
-          </button>
-          <button
-            onClick={() => setActiveView('global')}
-            className={`px-4 py-2 rounded-full text-xs font-semibold transition ${
-              activeView === 'global'
-                ? 'bg-gradient-to-r from-roseNeon-500 to-violetNeon-500 text-white shadow-glow-rose'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Global Top Couples
-          </button>
-        </div>
-      </div>
+        {/* Current Person Banner */}
+        {currentPerson && (
+          <div className="flex items-center space-x-4 p-4 rounded-2xl bg-[#0A0A0F] border border-white/5">
+            <img
+              src={currentPerson.avatar}
+              alt={currentPerson.name}
+              className="w-16 h-16 rounded-2xl object-cover border-2 border-[#E8472A]"
+            />
+            <div>
+              <div className="flex items-center space-x-2">
+                <h2 className="text-lg font-bold text-white">{currentPerson.name}</h2>
+                <span className="px-2.5 py-0.5 rounded-full bg-[#E8472A]/15 text-[#E8472A] border border-[#E8472A]/30 text-[10px] font-mono font-semibold">
+                  {currentPerson.personality_archetype || currentPerson.headline}
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">{currentPerson.role || currentPerson.company}</p>
+              <p className="text-xs text-slate-300 italic font-serif mt-1">
+                "{currentPerson.needs?.[0]?.evidence || 'Seeking authentic alignment and deep craft.'}"
+              </p>
+            </div>
+          </div>
+        )}
 
-      {/* INDIVIDUAL RANKINGS VIEW */}
-      {activeView === 'individual' && (
-        <div className="space-y-6">
-          
-          {/* Person Selector Header */}
-          <div className="glass-panel p-6 rounded-3xl border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            
-            <div className="space-y-2 flex-1">
-              <label className="text-xs font-mono text-slate-400 font-semibold uppercase tracking-wider block">
-                Select a person to view their ranked matches:
-              </label>
-              <select
-                value={selectedPersonId}
-                onChange={(e) => setSelectedPersonId(e.target.value)}
-                className="w-full md:max-w-md px-4 py-3 rounded-2xl bg-midnight-900 border border-white/10 text-white text-sm font-semibold focus:outline-none focus:border-roseNeon-500"
+        {/* Filter / Sort by Dimension */}
+        <div className="flex items-center justify-between flex-wrap gap-3 pt-1">
+          <div className="text-xs font-mono text-slate-400">
+            Ranked Matches across all 24 potential partners:
+          </div>
+
+          <div className="flex items-center space-x-1.5 bg-[#0A0A0F] p-1 rounded-xl border border-white/5 text-xs">
+            <span className="text-[10px] font-mono text-slate-500 px-2 flex items-center gap-1">
+              <Filter className="w-3 h-3" /> Sort by:
+            </span>
+            {[
+              { id: 'score', label: 'Overall Score' },
+              { id: 'chemistry', label: 'Chemistry' },
+              { id: 'values', label: 'Values Alignment' },
+              { id: 'lifestyle', label: 'Lifestyle Fit' }
+            ].map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setSortBy(f.id)}
+                className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition ${
+                  sortBy === f.id
+                    ? 'bg-[#E8472A] text-white shadow-glow-spark font-bold'
+                    : 'text-slate-400 hover:text-white'
+                }`}
               >
-                {profiles.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} ({p.company || p.currentRole})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {currentPerson && (
-              <div className="flex items-center space-x-4">
-                <img
-                  src={currentPerson.avatar}
-                  alt={currentPerson.name}
-                  className="w-14 h-14 rounded-2xl object-cover border border-white/20 shadow-lg"
-                />
-                <div className="min-w-0">
-                  <h3 className="text-base font-bold text-white truncate">{currentPerson.name}</h3>
-                  <p className="text-xs text-rose-400 truncate">{currentPerson.headline}</p>
-                  <button
-                    onClick={() => setShowNotifyModal(true)}
-                    className="mt-1 text-[11px] text-violet-400 hover:text-violet-300 font-mono flex items-center space-x-1"
-                  >
-                    <Send className="w-3 h-3" />
-                    <span>Send Telegram Summary</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-          </div>
-
-          {/* Rankings List */}
-          {loading ? (
-            <div className="p-16 text-center space-y-3">
-              <div className="w-10 h-10 border-4 border-roseNeon-500 border-t-transparent rounded-full animate-spin mx-auto" />
-              <p className="text-xs font-mono text-slate-400">Computing aggregated date scores & compatibility vectors...</p>
-            </div>
-          ) : rankingsData ? (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs text-slate-400 px-2">
-                <span>Ranked from Best Match to Least Compatible ({rankingsData.rankings?.length} candidates)</span>
-                <span className="font-mono text-emerald-400">AI Compatibility Engine Active</span>
-              </div>
-
-              {rankingsData.rankings?.map((match, idx) => {
-                const isTop = idx === 0;
-                const isRunnerUp = idx === 1 || idx === 2;
-
-                return (
-                  <div
-                    key={match.person.id}
-                    className={`glass-panel p-5 rounded-2xl border transition-all duration-200 flex flex-col md:flex-row md:items-center justify-between gap-4 ${
-                      isTop
-                        ? 'border-amber-400/40 bg-gradient-to-r from-amber-950/20 via-midnight-950 to-midnight-950'
-                        : isRunnerUp
-                        ? 'border-white/20'
-                        : 'border-white/5 opacity-90'
-                    }`}
-                  >
-                    <div className="flex items-start sm:items-center space-x-4">
-                      
-                      {/* Rank badge */}
-                      <span
-                        className={`w-9 h-9 rounded-2xl flex items-center justify-center font-display font-extrabold text-sm flex-shrink-0 ${
-                          idx === 0
-                            ? 'bg-amber-400 text-black shadow-lg shadow-amber-400/20'
-                            : idx === 1
-                            ? 'bg-slate-300 text-black'
-                            : idx === 2
-                            ? 'bg-amber-700 text-white'
-                            : 'bg-white/5 text-slate-400 border border-white/10'
-                        }`}
-                      >
-                        #{idx + 1}
-                      </span>
-
-                      {/* Avatar */}
-                      <img
-                        src={match.person.avatar}
-                        alt={match.person.name}
-                        className="w-14 h-14 rounded-2xl object-cover border border-white/15 shadow-md flex-shrink-0"
-                      />
-
-                      {/* Info & Reason */}
-                      <div className="space-y-1">
-                        <div className="flex items-center space-x-2">
-                          <h4 className="text-base font-bold text-white font-display">
-                            {match.person.name}
-                          </h4>
-                          {isTop && (
-                            <span className="px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-mono font-bold border border-amber-400/30">
-                              BEST MATCH
-                            </span>
-                          )}
-                        </div>
-
-                        <p className="text-xs text-rose-400 font-medium">
-                          {match.person.company || match.person.headline}
-                        </p>
-
-                        {/* Match Reason (Step 5 Requirement) */}
-                        <div className="text-xs text-slate-300 leading-relaxed bg-white/5 p-3 rounded-xl border border-white/5 mt-1 max-w-2xl">
-                          <span className="font-semibold text-rose-300 mr-1">Match Reason:</span>
-                          {match.reasons}
-                        </div>
-                      </div>
-
-                    </div>
-
-                    {/* Scores & CTAs */}
-                    <div className="flex items-center space-x-6 justify-between md:justify-end pt-2 md:pt-0 border-t md:border-t-0 border-white/5">
-                      
-                      {/* Score metrics */}
-                      <div className="text-right">
-                        <div className="flex items-center space-x-1.5 justify-end">
-                          <Flame className="w-4 h-4 text-rose-400" />
-                          <span className="text-2xl font-display font-extrabold text-white">
-                            {match.scores.overall}%
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-2 text-[10px] text-slate-400 font-mono mt-0.5">
-                          <span>Chem: {match.scores.chemistry}</span>
-                          <span>•</span>
-                          <span>Interests: {match.scores.sharedInterests}</span>
-                          <span>•</span>
-                          <span>Life: {match.scores.lifestyle}</span>
-                        </div>
-                      </div>
-
-                      {/* Action buttons */}
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => onStartDating(match.person.id)}
-                          className="px-3.5 py-2 rounded-xl bg-roseNeon-500/20 hover:bg-roseNeon-500/30 text-rose-300 text-xs font-semibold border border-roseNeon-500/40 transition flex items-center space-x-1"
-                        >
-                          <Radio className="w-3.5 h-3.5 text-rose-400" />
-                          <span>Simulate Date</span>
-                        </button>
-                      </div>
-
-                    </div>
-
-                  </div>
-                );
-              })}
-            </div>
-          ) : null}
-
-        </div>
-      )}
-
-      {/* GLOBAL LEADERBOARD VIEW */}
-      {activeView === 'global' && (
-        <div className="space-y-4">
-          <div className="text-xs text-slate-400">
-            Top compatible pairings across the entire autonomous network of 26 public figures:
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {globalLeaderboard.map((item, idx) => (
-              <div
-                key={idx}
-                className="glass-panel p-5 rounded-2xl border border-white/10 flex flex-col justify-between space-y-4 hover:border-roseNeon-500/30 transition"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="flex -space-x-3">
-                      <img src={item.person1.avatar} alt="p1" className="w-12 h-12 rounded-2xl object-cover border-2 border-midnight-950" />
-                      <img src={item.person2.avatar} alt="p2" className="w-12 h-12 rounded-2xl object-cover border-2 border-midnight-950" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-white">
-                        {item.person1.name} & {item.person2.name}
-                      </h4>
-                      <p className="text-[11px] text-slate-400 font-mono">
-                        Rank #{idx + 1} Power Match
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="text-right">
-                    <span className="text-xl font-display font-extrabold text-rose-400">
-                      {item.scores?.overall}%
-                    </span>
-                    <div className="text-[10px] text-slate-500 font-mono">Synergy</div>
-                  </div>
-                </div>
-
-                <div className="text-xs text-slate-300 bg-white/5 p-3 rounded-xl border border-white/5 leading-relaxed">
-                  💡 {item.reasons}
-                </div>
-
-                <div className="flex items-center justify-between pt-2 border-t border-white/5 text-xs">
-                  <div className="flex space-x-2 text-[11px] font-mono text-slate-400">
-                    <span>Chemistry: {item.scores?.chemistry}/10</span>
-                    <span>•</span>
-                    <span>Interests: {item.scores?.sharedInterests}/10</span>
-                  </div>
-                  <button
-                    onClick={() => onStartDating(item.person1.id)}
-                    className="text-xs font-semibold text-rose-400 hover:text-rose-300 flex items-center space-x-1"
-                  >
-                    <span>Launch Date</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </button>
-                </div>
-              </div>
+                {f.label}
+              </button>
             ))}
           </div>
         </div>
-      )}
 
-      {/* Notification Modal */}
-      {currentPerson && (
-        <NotificationModal
-          person={currentPerson}
-          isOpen={showNotifyModal}
-          onClose={() => setShowNotifyModal(false)}
-        />
+      </div>
+
+      {/* Numbered Cards #1 through #24 */}
+      {loading ? (
+        <div className="max-w-4xl mx-auto py-24 text-center space-y-4">
+          <div className="w-10 h-10 border-4 border-[#E8472A] border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-xs font-mono text-slate-400">Calculating multi-factor compatibility matrices...</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {sortedRankings.map((item, index) => {
+            const partner = item.person;
+            const score = item.score || item.scores?.overall || 85;
+            const breakdown = item.score_breakdown || {
+              chemistry: (item.scores?.chemistry || 8) * 10,
+              valuesAlignment: (item.scores?.sharedInterests || 8) * 10,
+              lifestyleFit: (item.scores?.lifestyle || 8) * 10,
+              wouldMeetAgain: (item.scores?.conversation || 8) * 10
+            };
+
+            return (
+              <motion.div
+                key={partner.id || index}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: Math.min(index * 0.03, 0.4) }}
+                className="glass-panel glass-panel-hover p-5 sm:p-6 rounded-3xl border border-white/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 group"
+              >
+                {/* Left: Rank Badge + Partner Photo + Name + Archetype */}
+                <div className="flex items-start sm:items-center space-x-4 min-w-0 md:w-1/3">
+                  <span className={`w-8 h-8 rounded-xl font-mono font-black text-xs flex items-center justify-center flex-shrink-0 ${
+                    index === 0
+                      ? 'bg-[#E8472A] text-white shadow-glow-spark'
+                      : index === 1
+                      ? 'bg-[#6C47FF] text-white shadow-glow-violet'
+                      : index === 2
+                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                      : 'bg-white/5 text-slate-400'
+                  }`}>
+                    #{index + 1}
+                  </span>
+
+                  <img
+                    src={partner.avatar}
+                    alt={partner.name}
+                    className="w-14 h-14 rounded-2xl object-cover border-2 border-white/10 group-hover:border-[#E8472A] transition"
+                  />
+
+                  <div className="min-w-0">
+                    <h3 className="text-base font-bold text-white group-hover:text-[#E8472A] transition truncate">
+                      {partner.name}
+                    </h3>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#6C47FF]/10 text-[#6C47FF] border border-[#6C47FF]/20 truncate block mt-0.5">
+                      {partner.personality_archetype || partner.headline}
+                    </span>
+                    <p className="text-[11px] text-slate-500 truncate mt-0.5">{partner.role || partner.company}</p>
+                  </div>
+                </div>
+
+                {/* Center: 2-Sentence Explanation + 4 Sub-Score Mini Bars */}
+                <div className="flex-1 space-y-3 w-full md:w-auto">
+                  <p className="text-xs text-slate-300 font-serif italic leading-relaxed">
+                    "{item.explanation || item.reasons || 'You matched because of strong creative synergy. The date revealed high conversational reciprocity and values alignment.'}"
+                  </p>
+
+                  {/* 4 Sub-Scores as Mini Bars */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                    <div>
+                      <div className="flex justify-between text-[10px] font-mono text-slate-400 mb-1">
+                        <span>Chemistry</span>
+                        <span>{breakdown.chemistry}%</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-[#0A0A0F] overflow-hidden">
+                        <div className="h-full bg-[#E8472A] rounded-full" style={{ width: `${breakdown.chemistry}%` }} />
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between text-[10px] font-mono text-slate-400 mb-1">
+                        <span>Values</span>
+                        <span>{breakdown.valuesAlignment}%</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-[#0A0A0F] overflow-hidden">
+                        <div className="h-full bg-[#6C47FF] rounded-full" style={{ width: `${breakdown.valuesAlignment}%` }} />
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between text-[10px] font-mono text-slate-400 mb-1">
+                        <span>Lifestyle</span>
+                        <span>{breakdown.lifestyleFit}%</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-[#0A0A0F] overflow-hidden">
+                        <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${breakdown.lifestyleFit}%` }} />
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between text-[10px] font-mono text-slate-400 mb-1">
+                        <span>Would Meet</span>
+                        <span>{breakdown.wouldMeetAgain}%</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-[#0A0A0F] overflow-hidden">
+                        <div className="h-full bg-amber-400 rounded-full" style={{ width: `${breakdown.wouldMeetAgain}%` }} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: Circular Score Ring + "Watch their date →" Button */}
+                <div className="flex items-center space-x-4 self-end md:self-center flex-shrink-0">
+                  <ScoreRing score={score} />
+
+                  <button
+                    onClick={() => {
+                      if (item.date_id || item.dateTranscriptId) {
+                        onWatchDate && onWatchDate(item.date_id || item.dateTranscriptId);
+                      } else {
+                        onStartDating(currentPerson.id, partner.id);
+                      }
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-gradient-to-r hover:from-[#E8472A] hover:to-[#6C47FF] text-white text-xs font-bold border border-white/10 hover:border-transparent transition flex items-center space-x-1.5 group-hover:shadow-glow-spark"
+                  >
+                    <span>Watch their date</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  </button>
+                </div>
+
+              </motion.div>
+            );
+          })}
+        </div>
       )}
 
     </div>
