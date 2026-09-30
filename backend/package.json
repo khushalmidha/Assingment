@@ -1,0 +1,19 @@
+{
+  "name": "agentic-dating-backend",
+  "version": "1.0.0",
+  "description": "Agentic Dating Site Backend with Playwright Scraping, Claude Sonnet 4.6 Analysis, and MCP Dating Harness",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "playwright": "^1.50.1",
+    "uuid": "^11.1.0"
+  }
+}
