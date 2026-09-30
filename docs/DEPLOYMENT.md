@@ -39,7 +39,7 @@ git push origin main
 
 ### Step 2: Import into Vercel
 1. Go to [vercel.com/new](https://vercel.com/new).
-2. Select repository `agentic-dating`.
+2. Select repository `Assingment`.
 3. Configure project settings:
    - **Framework Preset**: Other (or Vite)
    - **Build Command**: `cd frontend && npm install && npm run build`
