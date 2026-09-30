@@ -138,7 +138,11 @@ app.get('*', (req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Agentic Dating Server running at http://localhost:${PORT}`);
-  console.log(`📡 Loaded ${store.getProfiles().length} profiles & ${store.getDates().length} dates.`);
-});
+if (process.env.VERCEL !== '1' && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Agentic Dating Server running at http://localhost:${PORT}`);
+    console.log(`📡 Loaded ${store.getProfiles().length} profiles & ${store.getDates().length} dates.`);
+  });
+}
+
+export default app;
