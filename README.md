@@ -131,7 +131,7 @@ All MCP calls are logged and visualized in real time on the dating screen.
 ### 2. Installation
 Clone the repository and install dependencies:
 ```bash
-git clone https://github.com/your-username/agentic-dating.git
+git clone https://github.com/khushalmidha/agentic-dating.git
 cd agentic-dating
 
 # Install root, backend, and frontend packages
