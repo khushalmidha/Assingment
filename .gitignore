@@ -11,3 +11,5 @@ yarn-error.log*
 backend/.env
 recordings/
 *.webm
+*.mp4
+*.wav
