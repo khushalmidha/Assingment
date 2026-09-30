@@ -31,38 +31,80 @@ export default function App() {
     }
   };
 
+  // Sync tab and parameters with browser URL pathname
+  const syncFromLocation = () => {
+    const path = window.location.pathname;
+    if (path === '/' || path === '') {
+      setActiveTab('landing');
+    } else if (path === '/people') {
+      setActiveTab('profiles');
+    } else if (path.startsWith('/people/')) {
+      const id = path.replace('/people/', '').trim();
+      if (id) setSelectedPersonId(id);
+      setActiveTab('profile-detail');
+    } else if (path === '/dates') {
+      setActiveTab('dating');
+    } else if (path.startsWith('/dates/')) {
+      const id = path.replace('/dates/', '').trim();
+      if (id) setPreselectedDateId(id);
+      setActiveTab('dating');
+    } else if (path === '/rankings') {
+      setActiveTab('rankings');
+    } else if (path.startsWith('/rankings/')) {
+      const id = path.replace('/rankings/', '').trim();
+      if (id) setSelectedPersonId(id);
+      setActiveTab('rankings');
+    } else if (path === '/matrix') {
+      setActiveTab('matrix');
+    } else if (path === '/add' || path === '/input') {
+      setActiveTab('input');
+    }
+  };
+
   useEffect(() => {
     fetchProfiles();
+    syncFromLocation();
+
+    const handlePopState = () => {
+      syncFromLocation();
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  const handleSelectPerson = (person) => {
-    setSelectedPersonId(person.id);
-    setActiveTab('profile-detail');
+  const navigateTo = (tab, path, state = {}) => {
+    setActiveTab(tab);
+    if (path && window.location.pathname !== path) {
+      window.history.pushState(state, '', path);
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSelectPerson = (person) => {
+    const pId = typeof person === 'object' ? person.id : person;
+    setSelectedPersonId(pId);
+    navigateTo('profile-detail', `/people/${pId}`);
   };
 
   const handleStartDating = (personId, partnerId) => {
     setPreselectedDateId(personId);
-    setActiveTab('dating');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    navigateTo('dating', `/dates`);
   };
 
   const handleWatchDate = (dateId) => {
-    setActiveTab('dating');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setPreselectedDateId(dateId);
+    navigateTo('dating', `/dates/${dateId}`);
   };
 
   const handleNavigateToRankings = (personId) => {
     setSelectedPersonId(personId);
-    setActiveTab('rankings');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    navigateTo('rankings', `/rankings/${personId}`);
   };
 
   const handleProfileCreated = (newProfile) => {
     setProfiles((prev) => [newProfile, ...prev]);
     setSelectedPersonId(newProfile.id);
-    setActiveTab('profile-detail');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    navigateTo('profile-detail', `/people/${newProfile.id}`);
   };
 
   return (
@@ -72,8 +114,15 @@ export default function App() {
       <Navbar
         activeTab={activeTab}
         setActiveTab={(tab) => {
-          setActiveTab(tab);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          const pathMap = {
+            landing: '/',
+            profiles: '/people',
+            dating: '/dates',
+            rankings: '/rankings',
+            matrix: '/matrix',
+            input: '/add'
+          };
+          navigateTo(tab, pathMap[tab] || '/');
         }}
         profilesCount={profiles.length}
       />
@@ -93,8 +142,15 @@ export default function App() {
                 onSelectPerson={handleSelectPerson}
                 onStartDating={handleStartDating}
                 onNavigate={(tab) => {
-                  setActiveTab(tab);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  const pathMap = {
+                    landing: '/',
+                    profiles: '/people',
+                    dating: '/dates',
+                    rankings: '/rankings',
+                    matrix: '/matrix',
+                    input: '/add'
+                  };
+                  navigateTo(tab, pathMap[tab] || '/');
                 }}
               />
             )}
@@ -110,7 +166,7 @@ export default function App() {
             {activeTab === 'profile-detail' && selectedPersonId && (
               <ProfileDetailPage
                 personId={selectedPersonId}
-                onBack={() => setActiveTab('profiles')}
+                onBack={() => navigateTo('profiles', '/people')}
                 onStartDating={handleStartDating}
                 onNavigateToRankings={handleNavigateToRankings}
                 onWatchDate={handleWatchDate}
@@ -154,8 +210,15 @@ export default function App() {
 
       {/* Footer */}
       <Footer onNavigate={(tab) => {
-        setActiveTab(tab);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        const pathMap = {
+          landing: '/',
+          profiles: '/people',
+          dating: '/dates',
+          rankings: '/rankings',
+          matrix: '/matrix',
+          input: '/add'
+        };
+        navigateTo(tab, pathMap[tab] || '/');
       }} />
 
     </div>

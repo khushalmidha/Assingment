@@ -58,6 +58,32 @@ export default function DatingPage({ profiles, preselectedId, onNavigateToProfil
     loadDates();
   }, []);
 
+  // Handle preselected date or person
+  useEffect(() => {
+    if (preselectedId && historicalDates.length > 0) {
+      if (preselectedId.startsWith('date-')) {
+        const found = historicalDates.find(d => d.id === preselectedId);
+        if (found) {
+          setActiveDate(found);
+          setPerson1Id(found.agent_a_id);
+          setPerson2Id(found.agent_b_id);
+          setCurrentTurnIdx(found.transcript?.length || 8);
+          setSelectedScenario(found.scenario || 'coffee_chat');
+        }
+      } else {
+        setPerson1Id(preselectedId);
+        const match = historicalDates.find(d => d.agent_a_id === preselectedId || d.agent_b_id === preselectedId);
+        if (match) {
+          const partner = match.agent_a_id === preselectedId ? match.agent_b_id : match.agent_a_id;
+          setPerson2Id(partner);
+          setActiveDate(match);
+          setCurrentTurnIdx(match.transcript?.length || 8);
+          setSelectedScenario(match.scenario || 'coffee_chat');
+        }
+      }
+    }
+  }, [preselectedId, historicalDates]);
+
   // Auto scroll to bottom
   useEffect(() => {
     if (chatEndRef.current) {
